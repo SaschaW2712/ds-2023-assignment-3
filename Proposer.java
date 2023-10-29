@@ -2,15 +2,6 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-class ResponseWithOptionalProposal {
-    Proposal proposal = null;
-    
-    ResponseWithOptionalProposal() { }
-    
-    ResponseWithOptionalProposal(Proposal proposal) {
-        this.proposal = proposal;
-    }
-}
 
 public class Proposer {
     int memberId;

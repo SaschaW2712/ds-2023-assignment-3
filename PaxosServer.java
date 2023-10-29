@@ -26,6 +26,12 @@ public class PaxosServer {
     private static String electionWinner;
 
     public static void main(String[] args) {
+
+        double p = 0.3;
+        int d = 8000;
+
+        
+
         initMembers();
 
         runServerThread();
