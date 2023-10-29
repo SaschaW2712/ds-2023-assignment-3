@@ -19,29 +19,52 @@ public class PaxosServer {
             proposers.add(new Proposer(memberId, acceptors));
         }
         
-        try {
-            ServerSocket serverSocket = new ServerSocket(4567);
-            
-            while (true) {
-                Socket socket = serverSocket.accept();
-                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-                
-                String input = in.readLine();
-                if (input.startsWith("PREPARE")) {
-
-                    // TODO: Handle PREPARE message
-
-                } else if (input.startsWith("ACCEPT")) {
-
-                    // TODO: Handle ACCEPT message
-
-                }
-                
-                socket.close();
+        Thread serverThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                runServer();
             }
+        });  
+        serverThread.start();
+
+        for (Proposer proposer : proposers) {
+            String result = proposer.propose(Integer.toString(proposer.memberId));
+            System.out.println("Result for member " + proposer.memberId + ": " + result);
+        }
+    }
+
+    public static void runServer() {
+        try (ServerSocket serverSocket = new ServerSocket(4567)) {
+                while (true) {
+                    Socket socket = serverSocket.accept();
+                    BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                    
+                    String input = in.readLine();
+                    if (input.startsWith("PROPOSER")) {
+                        handleProposerConnection(in, out);
+                    } else if (input.startsWith("ACCEPTOR")) {
+                        handleAcceptorConnection(in, out);
+                    }
+                    
+                    socket.close();
+                }
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static void handleProposerConnection(
+        BufferedReader in,
+        PrintWriter out
+    ) {
+        System.out.println("In handleProposerConnection");
+    }
+    
+    public static void handleAcceptorConnection(
+        BufferedReader in,
+        PrintWriter out
+    ) {
+        System.out.println("In handleAcceptorConnection");
     }
 }

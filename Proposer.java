@@ -27,6 +27,7 @@ public class Proposer {
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 
+                out.println("PROPOSER " + memberId);
                 out.println("PREPARE " + proposalNumber);
 
                 String response = in.readLine();
@@ -54,6 +55,7 @@ public class Proposer {
                     PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                     BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                     
+                    out.println("PROPOSER " + memberId);
                     out.println("ACCEPT " + proposalNumber + " " + value);
                     String response = in.readLine();
                     if (response != null && response.equals("OK")) {
