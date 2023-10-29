@@ -33,7 +33,7 @@ public class Proposer {
         int proposedValueProposalId = -1;
         
         try {
-            Socket socket = new Socket("localhost", 4567); // Replace with the appropriate IP and port
+            Socket socket = new Socket("localhost", 4567);
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             
@@ -42,7 +42,7 @@ public class Proposer {
             String line;
             
             while ((line = in.readLine()) != null) {
-                ResponseWithOptionalProposal result = handleProposeResponse(line);
+                ResponseWithOptionalProposal result = parseAcceptorResponse(line);
                 
                 if (result != null) {
                     prepareCount++;
@@ -59,50 +59,54 @@ public class Proposer {
             e.printStackTrace();
         }
         
-        System.out.println();
-        System.out.println("PREPARE response report: ");
-        System.out.println("Member ID: " + memberId);
-        System.out.println("Proposal number: " + proposalNumber);
-        System.out.println("Prepare count: " + prepareCount);
-        System.out.println("Proposed value: " + proposedValue);
-        System.out.println();
-        
+        String acceptedValue;
+        if (proposedValue == null) {
+            acceptedValue = Integer.toString(memberId);
+         } else {
+            acceptedValue = proposedValue;
+         }
+
         //Only send accept requests if we got majority on propose responses
         if (prepareCount >= (acceptors.size() / 2) + 1) {
             int acceptCount = 0;
             
-            for (Acceptor acceptor : acceptors) {
-                try {
-                    Socket socket = new Socket("localhost", 4567); // Replace with the appropriate IP and port
-                    PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-                    BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            try {
+                Socket socket = new Socket("localhost", 4567);
+                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                
+                out.println("Proposer " + memberId + " Accept " + proposalNumber + " " + value);
+                
+                String line;
+                while ((line = in.readLine()) != null) {                    
+                    ResponseWithOptionalProposal result = parseAcceptorResponse(line);
                     
-                    out.println("Proposer " + memberId + " Accept " + proposalNumber + " " + value);
-                    
-                    String response = in.readLine();
-                    if (response != null && response.equals("OK")) {
+                    if (result != null) {
                         acceptCount++;
+                        
+                        if (result.proposal != null) {
+                            acceptedValue = result.proposal.value;
+                        }
                     }
-                    
-                    socket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
                 }
+                
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
             
             if (acceptCount >= (acceptors.size() / 2) + 1) {
-                return "Success";
+                return "SUCCESS " + acceptedValue;
             }
         }
         
-        return "Failure";
+        return "FAILURE";
     }
     
-    //Response will be of format "OK", "IGNORED", or "OK <previously accepted proposal ID> <previously accepted proposal value>"
-    public ResponseWithOptionalProposal handleProposeResponse(String response) {
-        System.out.println("(" + memberId + ") Got a response: " + response);
-        if (response.startsWith("OK")) {
-            String[] responseParams = response.split("\\s+");
+    //Response will be of format "OK", "REJECTED", or "OK <previously accepted proposal ID> <previously accepted proposal value>"
+    public ResponseWithOptionalProposal parseAcceptorResponse(String line) {
+        if (line.startsWith("OK")) {
+            String[] responseParams = line.split("\\s+");
             
             //Regular okay, no previously accepted proposal
             if (responseParams.length < 3) {

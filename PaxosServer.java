@@ -6,6 +6,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 enum NodeType {
     Proposer,
@@ -19,10 +20,49 @@ enum RequestPhase {
 
 public class PaxosServer {
 
-    public static List<Acceptor> acceptors = new ArrayList<>();
-    public static List<Proposer> proposers = new ArrayList<>();
+    private static List<Acceptor> acceptors = new ArrayList<>();
+    private static List<Proposer> proposers = new ArrayList<>();
+    private static ServerSocket serverSocket;
+    private static String electionWinner;
 
     public static void main(String[] args) {
+        initMembers();
+
+        runServerThread();
+
+        runProposerThreads();
+
+        closeServer();
+    }
+
+    public static void runProposerThreads() {
+        List<Thread> proposerThreads = new ArrayList<>();
+
+        for (Proposer proposer : proposers) {
+            Thread proposerThread = new Thread(() -> {
+                runProposal(proposer);
+            });
+
+            proposerThread.setName("proposer" + proposer.memberId);
+
+            proposerThreads.add(proposerThread);
+            
+            proposerThread.start();
+        }
+
+        for (Thread thread: proposerThreads) {
+            try {
+                thread.join();
+                System.out.println("Thread done: " + thread.getName());
+            } catch (InterruptedException e) {
+                System.out.println("Interrupted exception for thread join: " + thread.getName());
+                e.printStackTrace();
+                return;
+            }
+        }
+    }
+
+    public static void initMembers() {
         for (int memberId = 0; memberId < 9; memberId++) {
             acceptors.add(new Acceptor(memberId));
         }
@@ -32,21 +72,20 @@ public class PaxosServer {
             acceptorsWithoutCurrentMember.remove(memberId);
             proposers.add(new Proposer(memberId, acceptors));
         }
-        
-        new Thread(() -> {
-            runServer();
-        }).start();
-        
-        for (Proposer proposer : proposers) {
-            new Thread(() -> {
-                runProposal(proposer);
-            }).start();
-        }
     }
     
+    public static void runServerThread() {
+        Thread serverThread = new Thread(() -> {
+            runServer();
+        });
+        
+        serverThread.start();
+    }
+
     public static void runServer() {
-        try (ServerSocket serverSocket = new ServerSocket(4567)) {
-            while (true) {
+        try {
+            serverSocket = new ServerSocket(4567);
+            while (!serverSocket.isClosed()) {
                 Socket socket = serverSocket.accept();
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
@@ -56,6 +95,17 @@ public class PaxosServer {
                 socket.close();
             }
         } catch (IOException e) {
+            System.out.println("Server socket has closed, voting is done.");
+            System.out.println("Elected member: " + electionWinner);
+        }
+    }
+
+    public static void closeServer() {
+        System.out.println("Closing Paxos server socket");
+        try {
+            serverSocket.close();
+        } catch (IOException e) {
+            System.out.println("IOException closing server socket");
             e.printStackTrace();
         }
     }
@@ -67,27 +117,19 @@ public class PaxosServer {
         try {
             String[] input = in.readLine().split("\\s+");
 
-            NodeType nodeType = NodeType.valueOf(input[0]);
             int memberId = Integer.parseInt(input[1]);
             RequestPhase requestPhase = RequestPhase.valueOf(input[2]);
             int proposalNumber = Integer.parseInt(input[3]);
 
-            if (nodeType == NodeType.Proposer) {
+            switch (requestPhase) {
+                case Prepare:
+                    handlePrepareRequest(memberId, proposalNumber, out);
+                    break;
 
-                switch (requestPhase) {
-                    case Prepare:
-                        handlePrepareRequest(memberId, proposalNumber, out);
-                        break;
-
-                    case Accept:
-                        int value = Integer.parseInt(input[4]);
-                        handleAcceptRequest(memberId, proposalNumber, value);
-                        break;
-                }
-
-            } else {
-                System.out.println("This is surprising");
-                //TODO: handle error, or "Acceptor" connection
+                case Accept:
+                    String value = input[4];
+                    handleAcceptRequest(memberId, proposalNumber, value, out);
+                    break;
             }
 
         } catch (Exception e) {
@@ -97,9 +139,25 @@ public class PaxosServer {
     }
     
     public static void runProposal(Proposer proposer) {
+        long delay = 5 - proposer.memberId;
+
+        try {
+            TimeUnit.SECONDS.sleep(delay);
+        } catch (InterruptedException e) {
+                System.out.println("Interrupted exception for start delay");
+                e.printStackTrace();
+        }
+
         String result = proposer.propose(Integer.toString(proposer.memberId));
 
-        //TODO: handle overall result of proposal
+        System.out.println();
+        System.out.println("Result for memberId " + proposer.memberId + ": " + result);
+        System.out.println();
+
+        if (result.startsWith("SUCCESS")) {
+            int winnerId = Integer.parseInt(result.split("\\s+")[1]);
+            electionWinner = "M" + (winnerId + 1);
+        }
     }
     
     //Handle a request from the proposer with id `memberId`, and proposal number `proposalNumber`
@@ -108,7 +166,7 @@ public class PaxosServer {
         int proposalNumber,
         PrintWriter out
     ) {
-        System.out.println("PREPARE REQUEST: member " + memberId + ", proposal number " + proposalNumber);
+        System.out.println("PREPARE REQUEST: memberId " + memberId + ", proposal number " + proposalNumber);
 
         for (Acceptor acceptor: acceptors) {
             if (acceptor.memberId != memberId) {
@@ -130,8 +188,8 @@ public class PaxosServer {
 
                 //If prepareResponse is null, this proposal is older than the latest we've seen so we ignore it
                 } else {
-                    System.out.println("PREPARE RESPONSE: acceptor " + acceptor.memberId + ", response IGNORED");
-                    out.println("IGNORED");
+                    System.out.println("PREPARE RESPONSE: acceptor " + acceptor.memberId + ", response REJECTED");
+                    out.println("REJECTED");
                 }
             }
         }
@@ -140,8 +198,26 @@ public class PaxosServer {
     public static void handleAcceptRequest(
         int memberId,
         int proposalNumber,
-        int value
+        String value,
+        PrintWriter out
     ) {
-        //TODO: handle   
+        System.out.println("ACCEPT REQUEST: memberId " + memberId + ", proposal number " + proposalNumber + ", value " + value);
+
+        for (Acceptor acceptor: acceptors) {
+            if (acceptor.memberId != memberId) {
+                boolean acceptResponse = acceptor.accept(proposalNumber, value);
+
+                //If acceptResponse is true, it's accepted
+                if (acceptResponse) {
+                        System.out.println("ACCEPT RESPONSE: acceptor " + acceptor.memberId + ", response OK");
+                        out.println("OK");
+
+                //If acceptResponse is null or false, it's rejected
+                } else {
+                    System.out.println("ACCEPT RESPONSE: acceptor " + acceptor.memberId + ", response REJECTED");
+                    out.println("REJECTED");
+                }
+            }
+        }
     }
 }
