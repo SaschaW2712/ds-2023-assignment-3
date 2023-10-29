@@ -23,11 +23,13 @@ public class PaxosServer {
     public static List<Proposer> proposers = new ArrayList<>();
 
     public static void main(String[] args) {
-        for (int memberId = 0; memberId < 9; memberId++) {
+        for (int memberId = 0; memberId < 3; memberId++) {
             acceptors.add(new Acceptor(memberId));
         }
         
-        for (int memberId = 0; memberId < 3; memberId++) {
+        for (int memberId = 0; memberId < 1; memberId++) {
+            List<Acceptor> acceptorsWithoutCurrentMember = acceptors;
+            acceptorsWithoutCurrentMember.remove(memberId);
             proposers.add(new Proposer(memberId, acceptors));
         }
         
@@ -96,7 +98,6 @@ public class PaxosServer {
     
     public static void runProposal(Proposer proposer) {
         String result = proposer.propose(Integer.toString(proposer.memberId));
-        System.out.println("Result for member " + proposer.memberId + ": " + result);
     }
     
     //Handle a request from the proposer with id `memberId`, and proposal number `proposalNumber`
@@ -105,7 +106,7 @@ public class PaxosServer {
         int proposalNumber,
         PrintWriter out
     ) {
-        System.out.println("Sending prepare requests from member " + memberId + ", proposal number: " + proposalNumber);
+        System.out.println("PREPARE REQUEST: member " + memberId + ", proposal number " + proposalNumber);
 
         for (Acceptor acceptor: acceptors) {
             if (acceptor.memberId != memberId) {
@@ -116,15 +117,18 @@ public class PaxosServer {
 
                     //If acceptedProposal is null, this is the first proposal we've seen so we like this value
                     if (prepareResponse.acceptedProposal == null) {
+                        System.out.println("PREPARE RESPONSE: acceptor " + acceptor.memberId + ", response OK");
                         out.println("OK");
 
                     //If acceptedProposal is not null, this is the latest proposal we've seen but we've accepted a previous value already
                     } else {
+                        System.out.println("PREPARE RESPONSE: acceptor " + acceptor.memberId + ", response OK " + prepareResponse.acceptedProposal.proposalNumber + " " + prepareResponse.acceptedProposal.value);
                         out.println("OK " + prepareResponse.acceptedProposal.proposalNumber + " " + prepareResponse.acceptedProposal.value);
                     }
 
                 //If prepareResponse is null, this proposal is older than the latest we've seen so we ignore it
                 } else {
+                    System.out.println("PREPARE RESPONSE: acceptor " + acceptor.memberId + ", response IGNORED");
                     out.println("IGNORED");
                 }
             }
