@@ -7,6 +7,16 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
+enum NodeType {
+    Proposer,
+    Acceptor
+}
+
+enum RequestPhase {
+    Prepare,
+    Accept
+}
+
 public class PaxosServer {
     public static void main(String[] args) {
         List<Acceptor> acceptors = new ArrayList<>();
@@ -37,16 +47,47 @@ public class PaxosServer {
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                 
-                String input = in.readLine();
-                if (input.startsWith("PROPOSER")) {
-                    handleProposerConnection(in, out);
-                } else if (input.startsWith("ACCEPTOR")) {
-                    handleAcceptorConnection(in, out);
-                }
-                
+                parseConnection(in, out);
+
                 socket.close();
             }
         } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void parseConnection(
+        BufferedReader in,
+        PrintWriter out
+    ) {
+        try {
+            String[] input = in.readLine().split("\\s+");
+
+            NodeType nodeType = NodeType.valueOf(input[0]);
+            int memberId = Integer.parseInt(input[1]);
+            RequestPhase requestPhase = RequestPhase.valueOf(input[2]);
+            int proposalNumber = Integer.parseInt(input[3]);
+
+            if (nodeType == NodeType.Proposer) {
+
+                switch (requestPhase) {
+                    case Prepare:
+                        handlePrepareResponse(memberId, proposalNumber);
+                        break;
+
+                    case Accept:
+                        int value = Integer.parseInt(input[4]);
+                        handleAcceptResponse(memberId, proposalNumber, value);
+                        break;
+                }
+
+            } else {
+                System.out.println("This is surprising");
+                //TODO: handle error, or "Acceptor" connection
+            }
+
+        } catch (Exception e) {
+            System.out.println("Error in parseConnection: " + e.getLocalizedMessage());
             e.printStackTrace();
         }
     }
@@ -56,17 +97,18 @@ public class PaxosServer {
         System.out.println("Result for member " + proposer.memberId + ": " + result);
     }
     
-    public static void handleProposerConnection(
-    BufferedReader in,
-    PrintWriter out
+    public static void handlePrepareResponse(
+        int memberId,
+        int proposalNumber
     ) {
-        System.out.println("In handleProposerConnection");
+        
     }
     
-    public static void handleAcceptorConnection(
-    BufferedReader in,
-    PrintWriter out
+    public static void handleAcceptResponse(
+        int memberId,
+        int proposalNumber,
+        int value
     ) {
-        System.out.println("In handleAcceptorConnection");
+        
     }
 }

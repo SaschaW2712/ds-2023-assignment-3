@@ -27,8 +27,7 @@ public class Proposer {
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 
-                out.println("PROPOSER " + memberId);
-                out.println("PREPARE " + proposalNumber);
+                out.println("Proposer " + memberId + " Prepare " + proposalNumber);
 
                 String response = in.readLine();
 
@@ -55,8 +54,8 @@ public class Proposer {
                     PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                     BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                     
-                    out.println("PROPOSER " + memberId);
-                    out.println("ACCEPT " + proposalNumber + " " + value);
+                    out.println("Proposer " + memberId + " Accept " + proposalNumber + " " + value);
+
                     String response = in.readLine();
                     if (response != null && response.equals("OK")) {
                         acceptCount++;
@@ -69,10 +68,10 @@ public class Proposer {
             }
             
             if (acceptCount >= (acceptors.size() / 2) + 1) {
-                return "SUCCESS";
+                return "Success";
             }
         }
         
-        return "FAILURE";
+        return "Failure";
     }
 }
