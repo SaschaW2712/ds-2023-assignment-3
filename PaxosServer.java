@@ -23,11 +23,11 @@ public class PaxosServer {
     public static List<Proposer> proposers = new ArrayList<>();
 
     public static void main(String[] args) {
-        for (int memberId = 0; memberId < 3; memberId++) {
+        for (int memberId = 0; memberId < 9; memberId++) {
             acceptors.add(new Acceptor(memberId));
         }
         
-        for (int memberId = 0; memberId < 1; memberId++) {
+        for (int memberId = 0; memberId < 3; memberId++) {
             List<Acceptor> acceptorsWithoutCurrentMember = acceptors;
             acceptorsWithoutCurrentMember.remove(memberId);
             proposers.add(new Proposer(memberId, acceptors));
@@ -98,6 +98,8 @@ public class PaxosServer {
     
     public static void runProposal(Proposer proposer) {
         String result = proposer.propose(Integer.toString(proposer.memberId));
+
+        //TODO: handle overall result of proposal
     }
     
     //Handle a request from the proposer with id `memberId`, and proposal number `proposalNumber`
