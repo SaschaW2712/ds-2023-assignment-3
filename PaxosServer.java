@@ -27,11 +27,6 @@ public class PaxosServer {
 
     public static void main(String[] args) {
 
-        double p = 0.3;
-        int d = 8000;
-
-        
-
         initMembers();
 
         runServerThread();
@@ -69,11 +64,11 @@ public class PaxosServer {
     }
 
     public static void initMembers() {
-        for (int memberId = 0; memberId < 9; memberId++) {
+        for (int memberId = 1; memberId < 10; memberId++) {
             acceptors.add(new Acceptor(memberId));
         }
         
-        for (int memberId = 0; memberId < 3; memberId++) {
+        for (int memberId = 1; memberId < 4; memberId++) {
             List<Acceptor> acceptorsWithoutCurrentMember = acceptors;
             acceptorsWithoutCurrentMember.remove(memberId);
             proposers.add(new Proposer(memberId, acceptors));
@@ -162,7 +157,7 @@ public class PaxosServer {
 
         if (result.startsWith("SUCCESS")) {
             int winnerId = Integer.parseInt(result.split("\\s+")[1]);
-            electionWinner = "M" + (winnerId + 1);
+            electionWinner = "M" + (winnerId);
         }
     }
     

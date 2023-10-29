@@ -1,6 +1,6 @@
 all: compile
 
-compile: Proposal.java Acceptor.java Proposer.java PaxosServer.java
+compile: $(wildcard *.java) $(wildcard enums/*.java)
 	javac -d classfiles $^
 
 paxos: compile
