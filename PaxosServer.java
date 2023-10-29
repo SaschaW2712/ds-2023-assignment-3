@@ -18,13 +18,15 @@ enum RequestPhase {
 }
 
 public class PaxosServer {
+
+    public static List<Acceptor> acceptors = new ArrayList<>();
+    public static List<Proposer> proposers = new ArrayList<>();
+
     public static void main(String[] args) {
-        List<Acceptor> acceptors = new ArrayList<>();
         for (int memberId = 0; memberId < 9; memberId++) {
             acceptors.add(new Acceptor(memberId));
         }
         
-        List<Proposer> proposers = new ArrayList<>();
         for (int memberId = 0; memberId < 3; memberId++) {
             proposers.add(new Proposer(memberId, acceptors));
         }
@@ -72,12 +74,12 @@ public class PaxosServer {
 
                 switch (requestPhase) {
                     case Prepare:
-                        handlePrepareResponse(memberId, proposalNumber);
+                        handlePrepareRequest(memberId, proposalNumber, out);
                         break;
 
                     case Accept:
                         int value = Integer.parseInt(input[4]);
-                        handleAcceptResponse(memberId, proposalNumber, value);
+                        handleAcceptRequest(memberId, proposalNumber, value);
                         break;
                 }
 
@@ -97,18 +99,43 @@ public class PaxosServer {
         System.out.println("Result for member " + proposer.memberId + ": " + result);
     }
     
-    public static void handlePrepareResponse(
+    //Handle a request from the proposer with id `memberId`, and proposal number `proposalNumber`
+    public static void handlePrepareRequest(
         int memberId,
-        int proposalNumber
+        int proposalNumber,
+        PrintWriter out
     ) {
-        
+        System.out.println("Sending prepare requests from member " + memberId + ", proposal number: " + proposalNumber);
+
+        for (Acceptor acceptor: acceptors) {
+            if (acceptor.memberId != memberId) {
+                PrepareResponse prepareResponse = acceptor.prepare(proposalNumber);
+
+                //If prepareResponse is not null, this is the latest proposal we've seen
+                if (prepareResponse != null) {
+
+                    //If acceptedProposal is null, this is the first proposal we've seen so we like this value
+                    if (prepareResponse.acceptedProposal == null) {
+                        out.println("OK");
+
+                    //If acceptedProposal is not null, this is the latest proposal we've seen but we've accepted a previous value already
+                    } else {
+                        out.println("OK " + prepareResponse.acceptedProposal.proposalNumber + " " + prepareResponse.acceptedProposal.value);
+                    }
+
+                //If prepareResponse is null, this proposal is older than the latest we've seen so we ignore it
+                } else {
+                    out.println("IGNORED");
+                }
+            }
+        }
     }
     
-    public static void handleAcceptResponse(
+    public static void handleAcceptRequest(
         int memberId,
         int proposalNumber,
         int value
     ) {
-        
+        //TODO: handle   
     }
 }

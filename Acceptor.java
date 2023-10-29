@@ -7,17 +7,15 @@ public class Acceptor {
         this.memberId = memberId;
     }
     
-    public String prepare(int proposalNumber) {
+    public PrepareResponse prepare(int proposalNumber) {
         if (proposalNumber > promisedProposalNumber) {
             promisedProposalNumber = proposalNumber;
-            if (acceptedProposal != null) {
-                return acceptedProposal.value;
-            } else {
-                return null;
-            }
-        } else {
-            return null;
+            return new PrepareResponse(proposalNumber);
+        } else if (acceptedProposal != null) {
+            return new PrepareResponse(proposalNumber, acceptedProposal);
         }
+
+        return null;
     }
     
     public boolean accept(int proposalNumber, String value) {

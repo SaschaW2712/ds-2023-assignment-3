@@ -1,9 +1,9 @@
 public class Proposal {
-    int number;
+    int proposalNumber;
     String value;
     
     public Proposal(int number, String value) {
-        this.number = number;
+        this.proposalNumber = number;
         this.value = value;
     }
 }
