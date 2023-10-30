@@ -8,16 +8,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 /*
 * Todo:
-*      - Refactor prepare responses to allow for "no response", "negative response", and "positive response"
-*      - Make Acceptor also use socket communication
-*      - Make members use the same socket for their accept and propose
+*      - Fix timeouts causing hangs
 *      - Automated testing
 */
+import java.util.concurrent.TimeUnit;
 
 import enums.RequestPhase;
 import enums.ConnectionSource;
@@ -156,7 +153,7 @@ public class PaxosServer {
                 while (!socket.isClosed()) {
                     
                     // System.out.println("Current sizes of queues: proposer " + proposerToAcceptorMessageQueues.size() + ", acceptors: " + acceptorToProposerMessageQueues.size());
-                    String message = proposerToAcceptorMessageQueues.get(memberId - 1).poll();
+                    String message = proposerToAcceptorMessageQueues.get(memberId - 1).poll(15, TimeUnit.SECONDS);
                     
                     if (message != null) {
                         System.out.println("Acceptor " + memberId + " polled proposerMessageQueue successfully: " + message);
@@ -169,6 +166,9 @@ public class PaxosServer {
                             
                             acceptorToProposerMessageQueues.get(proposerMemberId - 1).put(line);
                         }
+                    } else {
+                        System.out.println("Acceptor " + memberId + " received no message from proposer");
+                        out.println("NORESPONSE");
                     }
                 }
             } catch (IOException | InterruptedException e) {
@@ -195,11 +195,15 @@ public class PaxosServer {
             int numResponses = 0;
             
             while (numResponses < currentAcceptors.size()) {
-                String line;
-                if ((line = acceptorToProposerMessageQueues.get(memberId - 1).poll()) != null) {
+                //Wait up to 15 seconds for response
+                String line = acceptorToProposerMessageQueues.get(memberId - 1).poll(15, TimeUnit.SECONDS);
+                if (line != null) {
                     System.out.println("Proposer " + memberId + " polled acceptorResponseQueue successfully: " + line);
                     out.println(line);
                     numResponses++;
+                } else {
+                    System.out.println("Proposer " + memberId + " received no response from acceptor");
+                    out.println("NORESPONSE");
                 }
             }
             
@@ -228,11 +232,15 @@ public class PaxosServer {
             int numResponses = 0;
             
             while (numResponses < currentAcceptors.size()) {
-                String line;
-                if ((line = acceptorToProposerMessageQueues.get(memberId - 1).poll()) != null) {
+                //Wait up to 15 seconds for response
+                String line = acceptorToProposerMessageQueues.get(memberId - 1).poll(15, TimeUnit.SECONDS);
+                if (line != null) {
                     System.out.println("Proposer " + memberId + " polled acceptorResponseQueue successfully: " + line);
                     out.println(line);
                     numResponses++;
+                } else {
+                    System.out.println("Proposer " + memberId + " received no response from acceptor");
+                    out.println("NORESPONSE");
                 }
             }
             

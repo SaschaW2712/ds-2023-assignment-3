@@ -53,7 +53,12 @@ public class Acceptor {
         String line;
         
         while ((line = in.readLine()) != null) {
-            // System.out.println("Acceptor " + memberId + " got line: " + line);
+            if (line.startsWith("NORESPONSE")) {
+                System.out.println("Acceptor received no messages in 15 seconds, re-connecting.");
+                return;
+            }
+
+            System.out.println("Acceptor " + memberId + " got line: " + line);
             
             String[] args = line.split("\\s+");
 
@@ -65,8 +70,7 @@ public class Acceptor {
                 PrepareResponse prepareResponse = prepare(proposalNumber);
                 
                 if (prepareResponse == null || !prepareResponse.memberResponds) {
-                    System.out.println("PREPARE RESPONSE (" + proposerMemberId + " " + proposalNumber + "): acceptor " + memberId + ", response REJECTED");
-                    out.println("REJECTED");
+                    System.out.println("PREPARE RESPONSE (" + proposerMemberId + " " + proposalNumber + "): acceptor " + memberId + " does not respond");
                 } else if (prepareResponse.acceptedProposal == null) {
                     System.out.println("PREPARE RESPONSE (" + proposerMemberId + " " + proposalNumber + "): acceptor " + memberId + ", response OK");
                     out.println("OK");
@@ -98,16 +102,16 @@ public class Acceptor {
         Location currentLocation = responsiveness.getMemberCurrentLocation();
         boolean respondToRequest = responsiveness.doesMemberRespond(currentLocation);
         
-        // if (respondToRequest == false) {
-        //     return new PrepareResponse(proposalNumber, false);
-        // }
+        if (respondToRequest == false) {
+            return new PrepareResponse(proposalNumber, false);
+        }
         
-        // try {
-        //     responsiveness.delayResponse(currentLocation);
-        // } catch (InterruptedException e) {
-        //     //If delay period is interrupted, send no response as if member never responded
-        //     return new PrepareResponse(proposalNumber, false);
-        // }
+        try {
+            responsiveness.delayResponse(currentLocation);
+        } catch (InterruptedException e) {
+            //If delay period is interrupted, send no response as if member never responded
+            return new PrepareResponse(proposalNumber, false);
+        }
         
         
         if (proposalNumber > promisedProposalNumber) {

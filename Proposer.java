@@ -24,13 +24,13 @@ public class Proposer {
         //increment by three for three proposers
         //TODO: consider more random proposal numbers so winner varies
         proposalNumber += 3;
-
+        
         int prepareCount = 0;
         String proposedValue = null;
         int proposedValueProposalId = -1;
-
+        
         int neededMajority = (numAcceptors / 2) + 1;
-    
+        
         try {
             TimeUnit.SECONDS.sleep(2); //Give acceptors a change to connect before making proposals
         } catch (InterruptedException e) {
@@ -47,6 +47,11 @@ public class Proposer {
             
             String line;
             while (prepareCount < numAcceptors && (line = in.readLine()) != null) {
+                if (line.startsWith("NORESPONSE")) {
+                    System.out.println("Proposer did not receive enough messages from Acceptors in 15 seconds, abandoning proposal.");
+                    return "FAILURE";
+                }
+
                 // System.out.println("Proposer " + memberId + " received prepare response: " + line);
                 ResponseWithOptionalProposal result = parseAcceptorResponse(line);
                 
@@ -61,7 +66,7 @@ public class Proposer {
             }
             
             System.out.println("Proposer " + memberId + " closing socket");
-
+            
             socket.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -73,11 +78,11 @@ public class Proposer {
         } else {
             acceptedValue = proposedValue;
         }
-
+        
         //Only send accept requests if we got majority on propose responses
         if (prepareCount >= neededMajority) {
             System.out.println("\nProposer " + memberId + " got prepare majority\n");
-
+            
             int acceptCount = 0;
             
             try {
@@ -89,6 +94,11 @@ public class Proposer {
                 
                 String line;
                 while (acceptCount < neededMajority && (line = in.readLine()) != null) { 
+                    if (line.startsWith("NORESPONSE")) {
+                        System.out.println("Proposer did not receive enough messages from Acceptors in 15 seconds, abandoning proposal.");
+                        return "FAILURE";
+                    }
+                    
                     ResponseWithOptionalProposal result = parseAcceptorResponse(line);
                     
                     if (result != null) {
@@ -114,11 +124,11 @@ public class Proposer {
             System.out.println("\nProposer " + memberId + " did NOT GET accept majority\n");
             return "FAILURE";
         }
-
+        
         System.out.println("\nProposer " + memberId + " did NOT GET prepare majority\n");
         return "FAILURE";
     }
-
+    
     
     //Response will be of format "OK", "REJECTED", or "OK <previously accepted proposal ID> <previously accepted proposal value>"
     public ResponseWithOptionalProposal parseAcceptorResponse(String line) {
