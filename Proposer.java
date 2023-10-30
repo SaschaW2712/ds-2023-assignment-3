@@ -6,15 +6,15 @@ import java.util.*;
 public class Proposer {
     int memberId;
     int proposalNumber;
-    List<Acceptor> acceptors;
+    int numAcceptors;
     
-    public Proposer(int memberId, List<Acceptor> acceptors) {
+    public Proposer(int memberId, int numAcceptors) {
         this.memberId = memberId;
         
         //ensure uniqueness (proposal number is always incremented by the same amount, so they interleave between members)
         this.proposalNumber = -3 + memberId;
         
-        this.acceptors = acceptors;
+        this.numAcceptors = numAcceptors;
     }
     
     public String propose(String value) {
@@ -58,7 +58,7 @@ public class Proposer {
          }
 
         //Only send accept requests if we got majority on propose responses
-        if (prepareCount >= (acceptors.size() / 2) + 1) {
+        if (prepareCount >= (numAcceptors / 2) + 1) {
             int acceptCount = 0;
             
             try {
@@ -86,7 +86,7 @@ public class Proposer {
                 e.printStackTrace();
             }
             
-            if (acceptCount >= (acceptors.size() / 2) + 1) {
+            if (acceptCount >= (numAcceptors / 2) + 1) {
                 return "SUCCESS " + acceptedValue;
             }
         }

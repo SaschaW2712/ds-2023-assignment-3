@@ -1,6 +1,6 @@
 package enums;
 
-enum InternetSpeed {
+public enum InternetSpeed {
     High(0),
     Medium(3),
     Low(5);

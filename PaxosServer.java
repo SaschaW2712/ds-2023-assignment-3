@@ -8,6 +8,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+
+/*
+ * Todo:
+ *      - Refactor prepare responses to allow for "no response", "negative response", and "positive response"
+ *      - Make Acceptor also use socket communication
+ *      - Make members use the same socket for their accept and propose
+ *      - Automated testing
+ */
+
 enum NodeType {
     Proposer,
     Acceptor
@@ -173,8 +182,10 @@ public class PaxosServer {
             if (acceptor.memberId != memberId) {
                 PrepareResponse prepareResponse = acceptor.prepare(proposalNumber);
 
-                //If prepareResponse is not null, this is the latest proposal we've seen
-                if (prepareResponse != null) {
+                if (prepareResponse == null || !prepareResponse.memberResponds) {
+                    System.out.println("PREPARE RESPONSE: acceptor " + acceptor.memberId + ", response REJECTED");
+                    out.println("REJECTED");
+                } else {
 
                     //If acceptedProposal is null, this is the first proposal we've seen so we like this value
                     if (prepareResponse.acceptedProposal == null) {
@@ -186,12 +197,7 @@ public class PaxosServer {
                         System.out.println("PREPARE RESPONSE: acceptor " + acceptor.memberId + ", response OK " + prepareResponse.acceptedProposal.proposalNumber + " " + prepareResponse.acceptedProposal.value);
                         out.println("OK " + prepareResponse.acceptedProposal.proposalNumber + " " + prepareResponse.acceptedProposal.value);
                     }
-
-                //If prepareResponse is null, this proposal is older than the latest we've seen so we ignore it
-                } else {
-                    System.out.println("PREPARE RESPONSE: acceptor " + acceptor.memberId + ", response REJECTED");
-                    out.println("REJECTED");
-                }
+                } 
             }
         }
     }

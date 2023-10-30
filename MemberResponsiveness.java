@@ -1,13 +1,9 @@
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import enums.InternetSpeed;
 import enums.Regularity;
 import enums.ResponseLikelihood;
-
-enum InternetSpeed {
-    High,
-    Medium,
-    Low
-}
 
 class Location {
     InternetSpeed internetSpeed;
@@ -19,47 +15,51 @@ class Location {
     }
 
     public boolean doesLocationRespond() {
-        double p = responseLikelihood.value;
+        double probability = responseLikelihood.value;
 
         double randomNumber = Math.random();
 
-        return randomNumber < p;
+        return randomNumber < probability;
     }
 }
 
-class LocationWithProbability {
+class LocationWithRegularity {
     Location location;
-    Regularity regularity;
+    Regularity regularity; //Represents the regularity with which the member is at this location
 
-    public LocationWithProbability(Location location, Regularity regularity) {
+    public LocationWithRegularity(Location location, Regularity regularity) {
         this.location = location;
         this.regularity = regularity;
     }
 }
 
 public class MemberResponsiveness {
-    List<LocationWithProbability> possibleLocations;
+    List<LocationWithRegularity> possibleLocations;
 
-    public MemberResponsiveness(List<LocationWithProbability> locations) {
+    public MemberResponsiveness(List<LocationWithRegularity> locations) {
         this.possibleLocations = locations;
     }
     
-    public boolean doesMemberRespond() {
-        Location currentLocation = getMemberCurrentLocation();
+    public boolean doesMemberRespond(Location location) {
+        return location.doesLocationRespond();
+    }
 
-        return currentLocation.doesLocationRespond();
+    public void delayResponse(Location location) throws InterruptedException {
+        int delaySeconds = location.internetSpeed.delay;
+
+        TimeUnit.SECONDS.sleep(delaySeconds);
     }
 
     public Location getMemberCurrentLocation() {
         double randomNumber = Math.random();
         double cumulativeProbability = 0.0;
 
-        for (LocationWithProbability location : possibleLocations) {
+        for (LocationWithRegularity locationWithProbability : possibleLocations) {
             
-            cumulativeProbability += location.regularity.value;
+            cumulativeProbability += locationWithProbability.regularity.value;
 
             if (randomNumber <= cumulativeProbability) {
-                return location.location;
+                return locationWithProbability.location;
             }
         }
 
