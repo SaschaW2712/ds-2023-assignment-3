@@ -1,6 +1,9 @@
 import java.io.*;
 import java.net.*;
-import java.util.*;
+import java.util.concurrent.TimeUnit;
+
+import dataclasses.Proposal;
+import dataclasses.ResponseWithOptionalProposal;
 
 
 public class Proposer {
@@ -93,6 +96,7 @@ public class Proposer {
         
         return "FAILURE";
     }
+
     
     //Response will be of format "OK", "REJECTED", or "OK <previously accepted proposal ID> <previously accepted proposal value>"
     public ResponseWithOptionalProposal parseAcceptorResponse(String line) {

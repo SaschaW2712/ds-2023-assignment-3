@@ -1,6 +1,11 @@
 import java.util.ArrayList;
 import java.util.List;
 
+import dataclasses.Location;
+import dataclasses.LocationWithRegularity;
+import dataclasses.MemberResponsiveness;
+import dataclasses.PrepareResponse;
+import dataclasses.Proposal;
 import enums.InternetSpeed;
 import enums.Regularity;
 import enums.ResponseLikelihood;

@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
  *      - Automated testing
  */
 
-enum NodeType {
+enum RequestType {
     Proposer,
     Acceptor
 }
@@ -35,53 +35,9 @@ public class PaxosServer {
     private static String electionWinner;
 
     public static void main(String[] args) {
-
-        initMembers();
-
         runServerThread();
 
-        runProposerThreads();
-
-        closeServer();
-    }
-
-    public static void runProposerThreads() {
-        List<Thread> proposerThreads = new ArrayList<>();
-
-        for (Proposer proposer : proposers) {
-            Thread proposerThread = new Thread(() -> {
-                runProposal(proposer);
-            });
-
-            proposerThread.setName("proposer" + proposer.memberId);
-
-            proposerThreads.add(proposerThread);
-            
-            proposerThread.start();
-        }
-
-        for (Thread thread: proposerThreads) {
-            try {
-                thread.join();
-                System.out.println("Thread done: " + thread.getName());
-            } catch (InterruptedException e) {
-                System.out.println("Interrupted exception for thread join: " + thread.getName());
-                e.printStackTrace();
-                return;
-            }
-        }
-    }
-
-    public static void initMembers() {
-        for (int memberId = 1; memberId < 10; memberId++) {
-            acceptors.add(new Acceptor(memberId));
-        }
-        
-        for (int memberId = 1; memberId < 4; memberId++) {
-            List<Acceptor> acceptorsWithoutCurrentMember = acceptors;
-            acceptorsWithoutCurrentMember.remove(memberId);
-            proposers.add(new Proposer(memberId, acceptors));
-        }
+        // closeServer(); //TODO: run this when voting done somehow
     }
     
     public static void runServerThread() {
@@ -127,46 +83,32 @@ public class PaxosServer {
         try {
             String[] input = in.readLine().split("\\s+");
 
+            RequestType requestType = RequestType.valueOf(input[0]);
             int memberId = Integer.parseInt(input[1]);
             RequestPhase requestPhase = RequestPhase.valueOf(input[2]);
             int proposalNumber = Integer.parseInt(input[3]);
 
-            switch (requestPhase) {
-                case Prepare:
-                    handlePrepareRequest(memberId, proposalNumber, out);
-                    break;
+            switch (requestType) {
+                case Proposer:
+                    switch (requestPhase) {
+                        case Prepare:
+                            handlePrepareRequest(memberId, proposalNumber, out);
+                            break;
 
-                case Accept:
-                    String value = input[4];
-                    handleAcceptRequest(memberId, proposalNumber, value, out);
+                        case Accept:
+                            String value = input[4];
+                            handleAcceptRequest(memberId, proposalNumber, value, out);
+                            break;
+                    }
+                    break;
+                
+                case Acceptor:
+                    System.out.println("acceptor");
                     break;
             }
-
         } catch (Exception e) {
             System.out.println("Error in parseConnection: " + e.getLocalizedMessage());
             e.printStackTrace();
-        }
-    }
-    
-    public static void runProposal(Proposer proposer) {
-        long delay = 5 - proposer.memberId;
-
-        try {
-            TimeUnit.SECONDS.sleep(delay);
-        } catch (InterruptedException e) {
-                System.out.println("Interrupted exception for start delay");
-                e.printStackTrace();
-        }
-
-        String result = proposer.propose(Integer.toString(proposer.memberId));
-
-        System.out.println();
-        System.out.println("Result for memberId " + proposer.memberId + ": " + result);
-        System.out.println();
-
-        if (result.startsWith("SUCCESS")) {
-            int winnerId = Integer.parseInt(result.split("\\s+")[1]);
-            electionWinner = "M" + (winnerId);
         }
     }
     
@@ -179,26 +121,27 @@ public class PaxosServer {
         System.out.println("PREPARE REQUEST: memberId " + memberId + ", proposal number " + proposalNumber);
 
         for (Acceptor acceptor: acceptors) {
-            if (acceptor.memberId != memberId) {
-                PrepareResponse prepareResponse = acceptor.prepare(proposalNumber);
+            //TODO: reimplement with communication to acceptor sockets
+            // if (acceptor.memberId != memberId) {
+            //     PrepareResponse prepareResponse = acceptor.prepare(proposalNumber);
 
-                if (prepareResponse == null || !prepareResponse.memberResponds) {
-                    System.out.println("PREPARE RESPONSE: acceptor " + acceptor.memberId + ", response REJECTED");
-                    out.println("REJECTED");
-                } else {
+            //     if (prepareResponse == null || !prepareResponse.memberResponds) {
+            //         System.out.println("PREPARE RESPONSE: acceptor " + acceptor.memberId + ", response REJECTED");
+            //         out.println("REJECTED");
+            //     } else {
 
-                    //If acceptedProposal is null, this is the first proposal we've seen so we like this value
-                    if (prepareResponse.acceptedProposal == null) {
-                        System.out.println("PREPARE RESPONSE: acceptor " + acceptor.memberId + ", response OK");
-                        out.println("OK");
+            //         //If acceptedProposal is null, this is the first proposal we've seen so we like this value
+            //         if (prepareResponse.acceptedProposal == null) {
+            //             System.out.println("PREPARE RESPONSE: acceptor " + acceptor.memberId + ", response OK");
+            //             out.println("OK");
 
-                    //If acceptedProposal is not null, this is the latest proposal we've seen but we've accepted a previous value already
-                    } else {
-                        System.out.println("PREPARE RESPONSE: acceptor " + acceptor.memberId + ", response OK " + prepareResponse.acceptedProposal.proposalNumber + " " + prepareResponse.acceptedProposal.value);
-                        out.println("OK " + prepareResponse.acceptedProposal.proposalNumber + " " + prepareResponse.acceptedProposal.value);
-                    }
-                } 
-            }
+            //         //If acceptedProposal is not null, this is the latest proposal we've seen but we've accepted a previous value already
+            //         } else {
+            //             System.out.println("PREPARE RESPONSE: acceptor " + acceptor.memberId + ", response OK " + prepareResponse.acceptedProposal.proposalNumber + " " + prepareResponse.acceptedProposal.value);
+            //             out.println("OK " + prepareResponse.acceptedProposal.proposalNumber + " " + prepareResponse.acceptedProposal.value);
+            //         }
+            //     } 
+            // }
         }
     }
     
@@ -211,20 +154,21 @@ public class PaxosServer {
         System.out.println("ACCEPT REQUEST: memberId " + memberId + ", proposal number " + proposalNumber + ", value " + value);
 
         for (Acceptor acceptor: acceptors) {
-            if (acceptor.memberId != memberId) {
-                boolean acceptResponse = acceptor.accept(proposalNumber, value);
+            //TODO: reimplement with communication to acceptor sockets
+            // if (acceptor.memberId != memberId) {
+            //     boolean acceptResponse = acceptor.accept(proposalNumber, value);
 
-                //If acceptResponse is true, it's accepted
-                if (acceptResponse) {
-                        System.out.println("ACCEPT RESPONSE: acceptor " + acceptor.memberId + ", response OK");
-                        out.println("OK");
+            //     //If acceptResponse is true, it's accepted
+            //     if (acceptResponse) {
+            //             System.out.println("ACCEPT RESPONSE: acceptor " + acceptor.memberId + ", response OK");
+            //             out.println("OK");
 
-                //If acceptResponse is null or false, it's rejected
-                } else {
-                    System.out.println("ACCEPT RESPONSE: acceptor " + acceptor.memberId + ", response REJECTED");
-                    out.println("REJECTED");
-                }
-            }
+            //     //If acceptResponse is null or false, it's rejected
+            //     } else {
+            //         System.out.println("ACCEPT RESPONSE: acceptor " + acceptor.memberId + ", response REJECTED");
+            //         out.println("REJECTED");
+            //     }
+            // }
         }
     }
 }
