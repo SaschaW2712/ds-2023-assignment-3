@@ -25,6 +25,8 @@ public class Proposer {
         int prepareCount = 0;
         String proposedValue = null;
         int proposedValueProposalId = -1;
+
+        int neededMajority = (numAcceptors / 2) + 1;
         
         try {
             Socket socket = new Socket("localhost", 4567);
@@ -35,7 +37,8 @@ public class Proposer {
             
             String line;
             
-            while ((line = in.readLine()) != null) {
+            while (prepareCount < numAcceptors && (line = in.readLine()) != null) {
+                System.out.println("Proposer " + memberId + " received prepare response: " + line);
                 ResponseWithOptionalProposal result = parseAcceptorResponse(line);
                 
                 if (result != null) {
@@ -48,6 +51,8 @@ public class Proposer {
                 }
             }
             
+            System.out.println("Proposer " + memberId + " closing socket");
+
             socket.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -56,12 +61,14 @@ public class Proposer {
         String acceptedValue;
         if (proposedValue == null) {
             acceptedValue = Integer.toString(memberId);
-         } else {
+        } else {
             acceptedValue = proposedValue;
-         }
+        }
 
         //Only send accept requests if we got majority on propose responses
-        if (prepareCount >= (numAcceptors / 2) + 1) {
+        if (prepareCount >= neededMajority) {
+            System.out.println("\nProposer " + memberId + " got prepare majority\n");
+
             int acceptCount = 0;
             
             try {
@@ -72,11 +79,12 @@ public class Proposer {
                 out.println("Proposer " + memberId + " Accept " + proposalNumber + " " + value);
                 
                 String line;
-                while ((line = in.readLine()) != null) {                    
+                while (acceptCount < neededMajority && (line = in.readLine()) != null) { 
                     ResponseWithOptionalProposal result = parseAcceptorResponse(line);
                     
                     if (result != null) {
                         acceptCount++;
+                        System.out.println("Proposer " + memberId + " received accept response: " + line + " (" + acceptCount + "/" + neededMajority + " accepts)");
                         
                         if (result.proposal != null) {
                             acceptedValue = result.proposal.value;
@@ -84,6 +92,7 @@ public class Proposer {
                     }
                 }
                 
+                System.out.println("Proposer " + memberId + " closing socket");
                 socket.close();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -93,7 +102,8 @@ public class Proposer {
                 return "SUCCESS " + acceptedValue;
             }
         }
-        
+
+        System.out.println("\nProposer " + memberId + " did NOT GET prepare majority\n");
         return "FAILURE";
     }
 

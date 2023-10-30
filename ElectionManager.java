@@ -7,11 +7,13 @@ public class ElectionManager {
         initMembers();
 
         runElection();
+
+        cleanupThreads();
     }
 
     public static void initMembers() {
-        for (int memberId = 1; memberId < 3; memberId++) {
-            members.add(new Member(memberId, memberId < 2));
+        for (int memberId = 1; memberId < 10; memberId++) {
+            members.add(new Member(memberId, memberId < 4));
         }
     }
 
@@ -20,7 +22,10 @@ public class ElectionManager {
 
         for (Member member : members) {
             Thread memberThread = new Thread(() -> {
-                member.elect();
+                String electionWinner = member.elect();
+                if (electionWinner != null) {
+                    System.out.println("Member " + electionWinner + " won the election!");
+                }
             });
 
             memberThread.setName("member" + member.memberId);
@@ -30,14 +35,30 @@ public class ElectionManager {
             memberThread.start();
         }
 
-        for (Thread thread: memberThreads) {
+
+        for (Thread thread : memberThreads) {
             try {
-                thread.join();
-                System.out.println("Thread done: " + thread.getName());
+                thread.join(2000);
+                thread.interrupt();
             } catch (InterruptedException e) {
                 System.out.println("Interrupted exception for thread join: " + thread.getName());
                 e.printStackTrace();
-                return;
+                System.out.println("Exiting.");
+            }
+        }
+    }
+
+    public static void cleanupThreads() {
+        for (Member member : members) {
+            Thread pThread = member.proposerThread;
+            Thread aThread = member.acceptorThread;
+
+            if (pThread != null && pThread.isAlive()) {
+                pThread.interrupt();
+            }
+
+            if (aThread.isAlive()) {
+                aThread.interrupt();
             }
         }
     }

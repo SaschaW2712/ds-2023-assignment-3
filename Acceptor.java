@@ -1,78 +1,122 @@
-import java.util.ArrayList;
-import java.util.List;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
 
 import dataclasses.Location;
-import dataclasses.LocationWithRegularity;
 import dataclasses.MemberResponsiveness;
 import dataclasses.PrepareResponse;
 import dataclasses.Proposal;
-import enums.InternetSpeed;
-import enums.Regularity;
-import enums.ResponseLikelihood;
+import enums.RequestPhase;
 
 public class Acceptor {
     int memberId;
     MemberResponsiveness responsiveness;
-
+    boolean exit;
+    
     int promisedProposalNumber = -1;
     Proposal acceptedProposal = null;
     
-    public Acceptor(int memberId) {
+    public Acceptor(int memberId, MemberResponsiveness responsiveness) {
         this.memberId = memberId;
-
-        List<LocationWithRegularity> memberLocations = new ArrayList<LocationWithRegularity>();
-        
-        switch (memberId) {
-            case 1:
-                Location member1HomeLocation = new Location(InternetSpeed.High, ResponseLikelihood.Certain);
-                memberLocations.add(new LocationWithRegularity(member1HomeLocation, Regularity.Always));
-                break;
-            case 2:
-                Location hillsLocation = new Location(InternetSpeed.Low, ResponseLikelihood.Improbable);
-                Location cafeLocation = new Location(InternetSpeed.High, ResponseLikelihood.Certain);
-                memberLocations.add(new LocationWithRegularity(hillsLocation, Regularity.Often));
-                memberLocations.add(new LocationWithRegularity(cafeLocation, Regularity.Rarely));
-                break;
-            case 3:
-                Location member3HomeLocation = new Location(InternetSpeed.High, ResponseLikelihood.Certain);
-                Location coorongLocation = new Location(InternetSpeed.Low, ResponseLikelihood.Impossible);
-                memberLocations.add(new LocationWithRegularity(member3HomeLocation, Regularity.Often));
-                memberLocations.add(new LocationWithRegularity(coorongLocation, Regularity.Rarely));
-                break;
-            default:
-                Location otherMembersHomeLocation = new Location(InternetSpeed.High, ResponseLikelihood.Certain);
-                Location workLocation = new Location(InternetSpeed.Medium, ResponseLikelihood.Impossible);
-                memberLocations.add(new LocationWithRegularity(otherMembersHomeLocation, Regularity.Sometimes));
-                memberLocations.add(new LocationWithRegularity(workLocation, Regularity.Sometimes));
-        }
-
-        this.responsiveness = new MemberResponsiveness(memberLocations);
+        this.responsiveness = responsiveness;
+        this.exit = false;
     }
     
-    public PrepareResponse prepare(int proposalNumber) {
+    public void listenToServer() {
+        System.out.println("M" + memberId + " acceptor listening");
 
+        while (true) {
+            try {
+                Socket socket = new Socket("localhost", 4567);
+                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            
+                System.out.println("Acceptor " + memberId + " connected to server");
+                out.println("Acceptor " + memberId);
+                handleServerResponse(in, out);
+                
+                System.out.println("Acceptor " + memberId + " closing socket");
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void handleServerResponse(
+        BufferedReader in,
+        PrintWriter out
+    ) throws IOException {
+        System.out.println("Acceptor " + memberId + " handling server response");
+        String line;
+        
+        while ((line = in.readLine()) != null) {
+            System.out.println("Acceptor " + memberId + " got line: " + line);
+            
+            String[] args = line.split("\\s+");
+
+            int proposerMemberId = Integer.parseInt(args[1]);
+            RequestPhase requestPhase = RequestPhase.valueOf(args[2]);
+            int proposalNumber = Integer.parseInt(args[3]);                
+            
+            if (requestPhase == RequestPhase.Prepare) {
+                PrepareResponse prepareResponse = prepare(proposalNumber);
+                
+                if (prepareResponse == null || !prepareResponse.memberResponds) {
+                    System.out.println("PREPARE RESPONSE: acceptor " + memberId + ", response REJECTED");
+                    out.println("REJECTED");
+                } else if (prepareResponse.acceptedProposal == null) {
+                    System.out.println("PREPARE RESPONSE: acceptor " + memberId + ", response OK");
+                    out.println("OK");
+                } else {
+                    System.out.println("PREPARE RESPONSE: acceptor " + memberId + ", response OK " + prepareResponse.acceptedProposal.proposalNumber + " " + prepareResponse.acceptedProposal.value);
+                    out.println("OK " + prepareResponse.acceptedProposal.proposalNumber + " " + prepareResponse.acceptedProposal.value);
+                }
+            } else if (requestPhase == RequestPhase.Accept) {
+                String value = args[4];
+                boolean acceptResponse = accept(proposalNumber, value);
+                
+                //If acceptResponse is true, it's accepted
+                if (acceptResponse) {
+                    System.out.println("ACCEPT RESPONSE: acceptor " + memberId + ", response OK");
+                    out.println("OK");
+                    
+                //If acceptResponse is null or false, it's rejected
+                } else {
+                    System.out.println("ACCEPT RESPONSE: acceptor " + memberId + ", response REJECTED");
+                    out.println("REJECTED");
+                }
+            }
+        }
+    }
+    
+    
+    public PrepareResponse prepare(int proposalNumber) {
+        
         Location currentLocation = responsiveness.getMemberCurrentLocation();
         boolean respondToRequest = responsiveness.doesMemberRespond(currentLocation);
-
-        if (respondToRequest == false) {
-            return new PrepareResponse(proposalNumber, false);
-        }
-
-        try {
-            responsiveness.delayResponse(currentLocation);
-        } catch (InterruptedException e) {
-            //If delay period is interrupted, send no response as if member never responded
-            return new PrepareResponse(proposalNumber, false);
-        }
-
-
+        
+        // if (respondToRequest == false) {
+        //     return new PrepareResponse(proposalNumber, false);
+        // }
+        
+        // try {
+        //     responsiveness.delayResponse(currentLocation);
+        // } catch (InterruptedException e) {
+        //     //If delay period is interrupted, send no response as if member never responded
+        //     return new PrepareResponse(proposalNumber, false);
+        // }
+        
+        
         if (proposalNumber > promisedProposalNumber) {
             promisedProposalNumber = proposalNumber;
             return new PrepareResponse(proposalNumber);
         } else if (acceptedProposal != null) {
             return new PrepareResponse(proposalNumber, acceptedProposal);
         }
-
+        
         return null;
     }
     
