@@ -37,6 +37,7 @@ public class Member {
 
         if (proposer != null && shouldPropose) {
             proposerThread = new Thread(() -> {
+                
                 runProposal(proposer);
             });
 
@@ -51,10 +52,11 @@ public class Member {
         acceptorThread.setName("acceptor" + memberId);
         acceptorThread.start();
 
-        if (proposer != null && shouldPropose) {
+        if (proposerThread != null) {
             try {
                 proposerThread.join();
                 System.out.println("Proposer thread done: " + proposerThread.getName());
+                return electionWinnerMemberId;
             } catch (InterruptedException e) {
                 System.out.println("Interrupted exception for thread join: " + proposerThread.getName());
                 e.printStackTrace();
@@ -63,7 +65,7 @@ public class Member {
         }
 
         //Non-proposers won't return a voting result
-        return electionWinnerMemberId;
+        return null;
     }
 
     
@@ -86,6 +88,8 @@ public class Member {
 
         if (result.startsWith("SUCCESS")) {
             electionWinnerMemberId = result.split("\\s+")[1];
+        } else {
+            runProposal(proposer);
         }
     }
 

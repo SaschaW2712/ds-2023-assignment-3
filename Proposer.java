@@ -21,12 +21,22 @@ public class Proposer {
     }
     
     public String propose(String value) {
-        proposalNumber += 3; //increment by three for three proposers
+        //increment by three for three proposers
+        //TODO: consider more random proposal numbers so winner varies
+        proposalNumber += 3;
+
         int prepareCount = 0;
         String proposedValue = null;
         int proposedValueProposalId = -1;
 
         int neededMajority = (numAcceptors / 2) + 1;
+    
+        try {
+            TimeUnit.SECONDS.sleep(2); //Give acceptors a change to connect before making proposals
+        } catch (InterruptedException e) {
+            System.out.println("InterruptedException in propose: " + e.getLocalizedMessage());
+            e.printStackTrace();
+        }
         
         try {
             Socket socket = new Socket("localhost", 4567);
@@ -36,9 +46,8 @@ public class Proposer {
             out.println("Proposer " + memberId + " Prepare " + proposalNumber);
             
             String line;
-            
             while (prepareCount < numAcceptors && (line = in.readLine()) != null) {
-                System.out.println("Proposer " + memberId + " received prepare response: " + line);
+                // System.out.println("Proposer " + memberId + " received prepare response: " + line);
                 ResponseWithOptionalProposal result = parseAcceptorResponse(line);
                 
                 if (result != null) {
@@ -76,7 +85,7 @@ public class Proposer {
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 
-                out.println("Proposer " + memberId + " Accept " + proposalNumber + " " + value);
+                out.println("Proposer " + memberId + " Accept " + proposalNumber + " " + acceptedValue);
                 
                 String line;
                 while (acceptCount < neededMajority && (line = in.readLine()) != null) { 
@@ -84,7 +93,7 @@ public class Proposer {
                     
                     if (result != null) {
                         acceptCount++;
-                        System.out.println("Proposer " + memberId + " received accept response: " + line + " (" + acceptCount + "/" + neededMajority + " accepts)");
+                        // System.out.println("Proposer " + memberId + " received accept response: " + line + " (" + acceptCount + "/" + neededMajority + " accepts)");
                         
                         if (result.proposal != null) {
                             acceptedValue = result.proposal.value;
@@ -101,6 +110,9 @@ public class Proposer {
             if (acceptCount >= (numAcceptors / 2) + 1) {
                 return "SUCCESS " + acceptedValue;
             }
+            
+            System.out.println("\nProposer " + memberId + " did NOT GET accept majority\n");
+            return "FAILURE";
         }
 
         System.out.println("\nProposer " + memberId + " did NOT GET prepare majority\n");

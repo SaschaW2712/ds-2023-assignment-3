@@ -3,12 +3,12 @@ import java.util.List;
 
 public class ElectionManager {
     public static ArrayList<Member> members = new ArrayList<>();
+    public static int existingElectionWinner = -1;
+
     public static void main(String[] args) {
         initMembers();
 
         runElection();
-
-        cleanupThreads();
     }
 
     public static void initMembers() {
@@ -22,9 +22,15 @@ public class ElectionManager {
 
         for (Member member : members) {
             Thread memberThread = new Thread(() -> {
-                String electionWinner = member.elect();
-                if (electionWinner != null) {
-                    System.out.println("Member " + electionWinner + " won the election!");
+                String winner = member.elect();
+                if (winner != null) {
+                    int winnerInt = Integer.parseInt(winner);
+                    if (existingElectionWinner == -1 || winnerInt == existingElectionWinner) {
+                        System.out.println("wahoo agreement or first result (on the value " + winnerInt + ")");
+                        existingElectionWinner = winnerInt;
+                    } else {
+                        System.out.println("uh oh notagreement (new: " + winnerInt + ", old: " + existingElectionWinner + ")");
+                    }
                 }
             });
 
@@ -38,7 +44,7 @@ public class ElectionManager {
 
         for (Thread thread : memberThreads) {
             try {
-                thread.join(2000);
+                thread.join();
                 thread.interrupt();
             } catch (InterruptedException e) {
                 System.out.println("Interrupted exception for thread join: " + thread.getName());
@@ -46,20 +52,7 @@ public class ElectionManager {
                 System.out.println("Exiting.");
             }
         }
-    }
 
-    public static void cleanupThreads() {
-        for (Member member : members) {
-            Thread pThread = member.proposerThread;
-            Thread aThread = member.acceptorThread;
-
-            if (pThread != null && pThread.isAlive()) {
-                pThread.interrupt();
-            }
-
-            if (aThread.isAlive()) {
-                aThread.interrupt();
-            }
-        }
+        System.out.println("Member " + existingElectionWinner + " won the election!");
     }
 }

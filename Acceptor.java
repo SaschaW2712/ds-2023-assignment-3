@@ -33,11 +33,11 @@ public class Acceptor {
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             
-                System.out.println("Acceptor " + memberId + " connected to server");
+                // System.out.println("Acceptor " + memberId + " connected to server");
                 out.println("Acceptor " + memberId);
                 handleServerResponse(in, out);
                 
-                System.out.println("Acceptor " + memberId + " closing socket");
+                // System.out.println("Acceptor " + memberId + " closing socket");
                 socket.close();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -49,11 +49,11 @@ public class Acceptor {
         BufferedReader in,
         PrintWriter out
     ) throws IOException {
-        System.out.println("Acceptor " + memberId + " handling server response");
+        // System.out.println("Acceptor " + memberId + " handling server response");
         String line;
         
         while ((line = in.readLine()) != null) {
-            System.out.println("Acceptor " + memberId + " got line: " + line);
+            // System.out.println("Acceptor " + memberId + " got line: " + line);
             
             String[] args = line.split("\\s+");
 
@@ -65,13 +65,13 @@ public class Acceptor {
                 PrepareResponse prepareResponse = prepare(proposalNumber);
                 
                 if (prepareResponse == null || !prepareResponse.memberResponds) {
-                    System.out.println("PREPARE RESPONSE: acceptor " + memberId + ", response REJECTED");
+                    System.out.println("PREPARE RESPONSE (" + proposerMemberId + " " + proposalNumber + "): acceptor " + memberId + ", response REJECTED");
                     out.println("REJECTED");
                 } else if (prepareResponse.acceptedProposal == null) {
-                    System.out.println("PREPARE RESPONSE: acceptor " + memberId + ", response OK");
+                    System.out.println("PREPARE RESPONSE (" + proposerMemberId + " " + proposalNumber + "): acceptor " + memberId + ", response OK");
                     out.println("OK");
                 } else {
-                    System.out.println("PREPARE RESPONSE: acceptor " + memberId + ", response OK " + prepareResponse.acceptedProposal.proposalNumber + " " + prepareResponse.acceptedProposal.value);
+                    System.out.println("PREPARE RESPONSE (" + proposerMemberId + " " + proposalNumber + "): acceptor " + memberId + ", response OK " + prepareResponse.acceptedProposal.proposalNumber + " " + prepareResponse.acceptedProposal.value);
                     out.println("OK " + prepareResponse.acceptedProposal.proposalNumber + " " + prepareResponse.acceptedProposal.value);
                 }
             } else if (requestPhase == RequestPhase.Accept) {
@@ -80,12 +80,12 @@ public class Acceptor {
                 
                 //If acceptResponse is true, it's accepted
                 if (acceptResponse) {
-                    System.out.println("ACCEPT RESPONSE: acceptor " + memberId + ", response OK");
+                    System.out.println("ACCEPT RESPONSE (" + proposerMemberId + " " + proposalNumber + " " + value + "): acceptor " + memberId + ", response OK");
                     out.println("OK");
                     
                 //If acceptResponse is null or false, it's rejected
                 } else {
-                    System.out.println("ACCEPT RESPONSE: acceptor " + memberId + ", response REJECTED");
+                    System.out.println("ACCEPT RESPONSE (" + proposerMemberId + " " + proposalNumber + " " + value + "): acceptor " + memberId + ", response REJECTED");
                     out.println("REJECTED");
                 }
             }
@@ -112,9 +112,12 @@ public class Acceptor {
         
         if (proposalNumber > promisedProposalNumber) {
             promisedProposalNumber = proposalNumber;
+
+            if (acceptedProposal != null) {
+                return new PrepareResponse(proposalNumber, acceptedProposal);
+            }
+
             return new PrepareResponse(proposalNumber);
-        } else if (acceptedProposal != null) {
-            return new PrepareResponse(proposalNumber, acceptedProposal);
         }
         
         return null;
@@ -123,6 +126,8 @@ public class Acceptor {
     public boolean accept(int proposalNumber, String value) {
         if (proposalNumber >= promisedProposalNumber) {
             promisedProposalNumber = proposalNumber;
+
+            System.out.println("Setting accepted proposal");
             acceptedProposal = new Proposal(proposalNumber, value);
             return true;
         } else {
