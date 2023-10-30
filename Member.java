@@ -4,11 +4,13 @@ public class Member {
     int memberId;
     Proposer proposer;
     Acceptor acceptor;
+    boolean shouldPropose;
     String electionWinner;
 
     public Member(int memberId, boolean shouldPropose) {
         this.memberId = memberId;
         this.acceptor = new Acceptor(memberId);
+        this.shouldPropose = shouldPropose;
 
         if (shouldPropose) {
             this.proposer = new Proposer(memberId, 9);
@@ -16,11 +18,14 @@ public class Member {
     }
 
     public void elect() {
-        Thread proposerThread = new Thread(() -> {
-            runProposal(proposer);
-        });
-        
-        proposerThread.start();
+        if (proposer != null && shouldPropose) {
+            Thread proposerThread = new Thread(() -> {
+                runProposal(proposer);
+            });
+            
+            proposerThread.start();
+        }
+
 
         
     }
