@@ -24,44 +24,42 @@ public class Acceptor {
         this.exit = false;
     }
     
-    public void listenToServer() {
-        System.out.println("M" + memberId + " acceptor listening");
-
+    public synchronized void listenToServer() {
+        // System.out.println("M" + memberId + " acceptor listening");
+        
         while (true) {
             try {
                 Socket socket = new Socket("localhost", 4567);
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            
-                // System.out.println("Acceptor " + memberId + " connected to server");
+                
+                System.out.println("Acceptor " + memberId + " connected to server");
                 out.println("Acceptor " + memberId);
+                
                 handleServerResponse(in, out);
                 
-                // System.out.println("Acceptor " + memberId + " closing socket");
+                System.out.println("Acceptor " + memberId + " closing socket");
+                socket.shutdownOutput();
                 socket.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
-
-    public void handleServerResponse(
-        BufferedReader in,
-        PrintWriter out
+    
+    public synchronized void handleServerResponse(
+    BufferedReader in,
+    PrintWriter out
     ) throws IOException {
-        // System.out.println("Acceptor " + memberId + " handling server response");
-        String line;
-        
-        while ((line = in.readLine()) != null) {
-            if (line.startsWith("NORESPONSE")) {
-                System.out.println("Acceptor received no messages in 15 seconds, re-connecting.");
-                return;
-            }
+        System.out.println("Acceptor " + memberId + " handling server response");
 
+        String line;        
+        while ((line = in.readLine()) != null) {
+            
             System.out.println("Acceptor " + memberId + " got line: " + line);
             
             String[] args = line.split("\\s+");
-
+            
             int proposerMemberId = Integer.parseInt(args[1]);
             RequestPhase requestPhase = RequestPhase.valueOf(args[2]);
             int proposalNumber = Integer.parseInt(args[3]);                
@@ -71,6 +69,7 @@ public class Acceptor {
                 
                 if (prepareResponse == null || !prepareResponse.memberResponds) {
                     System.out.println("PREPARE RESPONSE (" + proposerMemberId + " " + proposalNumber + "): acceptor " + memberId + " does not respond");
+                    //No output, just disconnect
                 } else if (prepareResponse.acceptedProposal == null) {
                     System.out.println("PREPARE RESPONSE (" + proposerMemberId + " " + proposalNumber + "): acceptor " + memberId + ", response OK");
                     out.println("OK");
@@ -87,7 +86,7 @@ public class Acceptor {
                     System.out.println("ACCEPT RESPONSE (" + proposerMemberId + " " + proposalNumber + " " + value + "): acceptor " + memberId + ", response OK");
                     out.println("OK");
                     
-                //If acceptResponse is null or false, it's rejected
+                    //If acceptResponse is null or false, it's rejected
                 } else {
                     System.out.println("ACCEPT RESPONSE (" + proposerMemberId + " " + proposalNumber + " " + value + "): acceptor " + memberId + ", response REJECTED");
                     out.println("REJECTED");
@@ -102,40 +101,40 @@ public class Acceptor {
         Location currentLocation = responsiveness.getMemberCurrentLocation();
         boolean respondToRequest = responsiveness.doesMemberRespond(currentLocation);
         
-        if (respondToRequest == false) {
-            return new PrepareResponse(proposalNumber, false);
-        }
-        
-        try {
-            responsiveness.delayResponse(currentLocation);
-        } catch (InterruptedException e) {
-            //If delay period is interrupted, send no response as if member never responded
-            return new PrepareResponse(proposalNumber, false);
-        }
-        
-        
-        if (proposalNumber > promisedProposalNumber) {
-            promisedProposalNumber = proposalNumber;
-
-            if (acceptedProposal != null) {
-                return new PrepareResponse(proposalNumber, acceptedProposal);
+        // if (respondToRequest == false) {
+            //     return new PrepareResponse(proposalNumber, false);
+            // }
+            
+            // try {
+                //     responsiveness.delayResponse(currentLocation);
+                // } catch (InterruptedException e) {
+                    //     //If delay period is interrupted, send no response as if member never responded
+                    //     return new PrepareResponse(proposalNumber, false);
+                    // }
+                    
+                    
+                    if (proposalNumber > promisedProposalNumber) {
+                        promisedProposalNumber = proposalNumber;
+                        
+                        if (acceptedProposal != null) {
+                            return new PrepareResponse(proposalNumber, acceptedProposal);
+                        }
+                        
+                        return new PrepareResponse(proposalNumber);
+                    }
+                    
+                    return null;
+                }
+                
+                public boolean accept(int proposalNumber, String value) {
+                    if (proposalNumber >= promisedProposalNumber) {
+                        promisedProposalNumber = proposalNumber;
+                        
+                        System.out.println("Setting accepted proposal");
+                        acceptedProposal = new Proposal(proposalNumber, value);
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
             }
-
-            return new PrepareResponse(proposalNumber);
-        }
-        
-        return null;
-    }
-    
-    public boolean accept(int proposalNumber, String value) {
-        if (proposalNumber >= promisedProposalNumber) {
-            promisedProposalNumber = proposalNumber;
-
-            System.out.println("Setting accepted proposal");
-            acceptedProposal = new Proposal(proposalNumber, value);
-            return true;
-        } else {
-            return false;
-        }
-    }
-}

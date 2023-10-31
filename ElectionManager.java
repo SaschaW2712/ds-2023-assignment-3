@@ -11,9 +11,10 @@ public class ElectionManager {
         runElection();
     }
 
+    //MAJORITY CONSTANTS (2)
     public static void initMembers() {
         for (int memberId = 1; memberId < 10; memberId++) {
-            members.add(new Member(memberId, memberId < 4));
+            members.add(new Member(memberId, memberId < 3));
         }
     }
 
@@ -26,10 +27,7 @@ public class ElectionManager {
                 if (winner != null) {
                     int winnerInt = Integer.parseInt(winner);
                     if (existingElectionWinner == -1 || winnerInt == existingElectionWinner) {
-                        System.out.println("wahoo agreement or first result (on the value " + winnerInt + ")");
                         existingElectionWinner = winnerInt;
-                    } else {
-                        System.out.println("uh oh notagreement (new: " + winnerInt + ", old: " + existingElectionWinner + ")");
                     }
                 }
             });

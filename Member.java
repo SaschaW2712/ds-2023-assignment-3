@@ -13,7 +13,6 @@ public class Member {
     int memberId;
     Proposer proposer;
     Acceptor acceptor;
-    boolean shouldPropose;
     String electionWinnerMemberId;
     MemberResponsiveness responsiveness;
 
@@ -22,9 +21,9 @@ public class Member {
 
     public Member(int memberId, boolean shouldPropose) {
         this.memberId = memberId;
-        this.shouldPropose = shouldPropose;
 
         if (shouldPropose) {
+            //MAJORITY CONSTANT
             this.proposer = new Proposer(memberId, 9);
         }
 
@@ -33,9 +32,9 @@ public class Member {
     }
 
     public String elect() {
-        System.out.println("M" + memberId + " elect started");
+        // System.out.println("M" + memberId + " elect started");
 
-        if (proposer != null && shouldPropose) {
+        if (proposer != null) {
             proposerThread = new Thread(() -> {
                 
                 runProposal(proposer);
@@ -55,7 +54,7 @@ public class Member {
         if (proposerThread != null) {
             try {
                 proposerThread.join();
-                System.out.println("Proposer thread done: " + proposerThread.getName());
+                // System.out.println("Proposer thread done: " + proposerThread.getName());
                 return electionWinnerMemberId;
             } catch (InterruptedException e) {
                 System.out.println("Interrupted exception for thread join: " + proposerThread.getName());
@@ -70,15 +69,7 @@ public class Member {
 
     
     public void runProposal(Proposer proposer) {
-        System.out.println("M" + memberId + " propose started");
-        // long delay = 5 - proposer.memberId;
-
-        // try {
-        //     TimeUnit.SECONDS.sleep(delay);
-        // } catch (InterruptedException e) {
-        //         System.out.println("Interrupted exception for start delay");
-        //         e.printStackTrace();
-        // }
+        // System.out.println("M" + memberId + " propose started");
 
         String result = proposer.propose(Integer.toString(proposer.memberId));
 
