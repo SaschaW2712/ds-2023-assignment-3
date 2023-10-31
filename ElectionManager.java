@@ -4,23 +4,23 @@ import java.util.List;
 public class ElectionManager {
     public static ArrayList<Member> members = new ArrayList<>();
     public static int existingElectionWinner = -1;
-
+    
     public static void main(String[] args) {
         initMembers();
-
+        
         runElection();
     }
-
+    
     //MAJORITY CONSTANTS (2)
     public static void initMembers() {
         for (int memberId = 1; memberId < 10; memberId++) {
             members.add(new Member(memberId, memberId < 4));
         }
     }
-
+    
     public static void runElection() {
         List<Thread> memberThreads = new ArrayList<>();
-
+        
         for (Member member : members) {
             Thread memberThread = new Thread(() -> {
                 String winner = member.elect();
@@ -31,15 +31,15 @@ public class ElectionManager {
                     }
                 }
             });
-
+            
             memberThread.setName("member" + member.memberId);
-
+            
             memberThreads.add(memberThread);
             
             memberThread.start();
         }
-
-
+        
+        
         for (Thread thread : memberThreads) {
             try {
                 thread.join();
@@ -50,7 +50,7 @@ public class ElectionManager {
                 System.out.println("Exiting.");
             }
         }
-
+        
         System.out.println("Member " + existingElectionWinner + " won the election!");
     }
 }

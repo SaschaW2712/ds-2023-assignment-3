@@ -1,6 +1,5 @@
 import java.io.*;
 import java.net.*;
-import java.util.concurrent.TimeUnit;
 
 import dataclasses.Proposal;
 import dataclasses.ResponseWithOptionalProposal;
@@ -32,13 +31,6 @@ public class Proposer {
         int neededMajority = (numAcceptors / 2) + 1;
         
         try {
-            TimeUnit.SECONDS.sleep(2); //Give acceptors a change to connect before making proposals
-        } catch (InterruptedException e) {
-            System.out.println("InterruptedException in propose: " + e.getLocalizedMessage());
-            e.printStackTrace();
-        }
-        
-        try {
             Socket socket = new Socket("localhost", 4567);
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -52,7 +44,7 @@ public class Proposer {
             && !allAcceptorsResponded
             ) {
                 System.out.println("Proposer " + memberId + " got line: " + line);
-
+                
                 if (line.startsWith("TIMEOUT")) {
                     System.out.println("(Proposer prepare " + memberId + " " + proposalNumber + ") timed out");
                     break;
@@ -60,7 +52,7 @@ public class Proposer {
                     break;
                 }
                 
-                // System.out.println("Proposer " + memberId + " received prepare response: " + line);
+                System.out.println("Proposer " + memberId + " received prepare response: " + line);
                 ResponseWithOptionalProposal result = parseAcceptorResponse(line);
                 
                 if (result != null) {
@@ -71,10 +63,7 @@ public class Proposer {
                         proposedValueProposalId = result.proposal.proposalNumber;
                     }
                 }
-            }
-            
-            System.out.println("Proposer " + memberId + " closing socket");
-            
+            }            
             socket.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -89,16 +78,9 @@ public class Proposer {
         
         //Only send accept requests if we got majority on propose responses
         if (promiseCount >= neededMajority) {
-            System.out.println("\nProposer " + memberId + " got prepare majority\n");
+            System.out.println("\nProposer " + memberId + " got prepare majority for value " + acceptedValue);
             
             int acceptCount = 0;
-            
-            try {
-                TimeUnit.SECONDS.sleep(1); //Give acceptors a change to reconnect before followup
-            } catch (InterruptedException e) {
-                System.out.println("InterruptedException in propose: " + e.getLocalizedMessage());
-                e.printStackTrace();
-            }
             
             try {
                 Socket socket = new Socket("localhost", 4567);
@@ -123,8 +105,8 @@ public class Proposer {
                     ResponseWithOptionalProposal result = parseAcceptorResponse(line);
                     
                     if (result != null) {
-                        acceptCount++;
-                        // System.out.println("Proposer " + memberId + " received accept response: " + line + " (" + acceptCount + "/" + neededMajority + " accepts)");
+                        acceptCount++;                        
+                        System.out.println("Proposer " + memberId + " received accept response: " + line + " (" + acceptCount + "/" + neededMajority + " accepts)");
                         
                         if (result.proposal != null) {
                             acceptedValue = result.proposal.value;
@@ -139,14 +121,15 @@ public class Proposer {
             }
             
             if (acceptCount >= (numAcceptors / 2) + 1) {
+                System.out.println("\nProposer " + memberId + " got accept majority for value " + acceptedValue);
                 return "SUCCESS " + acceptedValue;
             }
             
-            System.out.println("\nProposer " + memberId + " did NOT GET accept majority\n");
+            System.out.println("\nProposer " + memberId + " did not get accept majority, trying again.\n");
             return "FAILURE";
         }
         
-        System.out.println("\nProposer " + memberId + " did NOT GET prepare majority\n");
+        System.out.println("\nProposer " + memberId + " did not get prepare majority, trying again.\n");
         return "FAILURE";
     }
     

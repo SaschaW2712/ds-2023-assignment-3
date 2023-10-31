@@ -11,8 +11,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 /*
 * Todo:
-*      - Finish implementing socket communication instead of message queues
-*      - Fix timeouts causing hangs
+*      - Finish resolving completed election for case where threads exit before all proposers know the result
+*      - Clean up output
 *      - Automated testing
 */
 import java.util.concurrent.TimeUnit;
@@ -75,6 +75,11 @@ public class PaxosServer {
                 String line;
                 if ((line = in.readLine()) != null) {
                     System.out.println("Incoming connection: " + line);
+
+                    if (line.startsWith("Election Result")) {
+                        handleElectionResultRequest(socket);
+                        return;
+                    }
                     
                     String[] input = line.split("\\s+");
                     
@@ -104,6 +109,12 @@ public class PaxosServer {
                 e.printStackTrace();
             }
         });
+    }
+
+    public static void handleElectionResultRequest(
+        Socket socket
+    ) {
+
     }
     
     public static void handleProposerConnection(
@@ -140,9 +151,13 @@ public class PaxosServer {
             //MAJORITY CONSTANT
             int majority = 5;
             
+
+            //Add a small amount of randomness to timeout, to avoid repeated failed votes due to incrementing proposal numbers
+            double timeout = 5000 + (1000 * Math.random());
+            
             while (
             proposerResponseCounts.get(memberId) < majority
-            && (System.currentTimeMillis() - 15000) < startTimeMs //set timeout on waiting
+            && (System.currentTimeMillis() - timeout) < startTimeMs //set timeout on waiting
             ) {
                 //wait
             }
