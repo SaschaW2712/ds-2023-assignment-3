@@ -13,7 +13,7 @@ public class ElectionManager {
 
     //MAJORITY CONSTANTS (2)
     public static void initMembers() {
-        for (int memberId = 1; memberId < 10; memberId++) {
+        for (int memberId = 1; memberId < 6; memberId++) {
             members.add(new Member(memberId, memberId < 3));
         }
     }

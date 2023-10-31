@@ -24,7 +24,7 @@ public class Member {
 
         if (shouldPropose) {
             //MAJORITY CONSTANT
-            this.proposer = new Proposer(memberId, 9);
+            this.proposer = new Proposer(memberId, 5);
         }
 
         initMemberResponsiveness(memberId);

@@ -45,16 +45,19 @@ public class Proposer {
             
             out.println("Proposer " + memberId + " Prepare " + proposalNumber);
             
-            int noCount = 0;
+            boolean allAcceptorsResponded = false;
             
             String line;
             while ((line = in.readLine()) != null
-            && (noCount + promiseCount) < numAcceptors
+            && !allAcceptorsResponded
             ) {
-                if (line.startsWith("NORESPONSE")) {
-                    System.out.println("(Proposer prepare " + memberId + " " + proposalNumber + ") An acceptor did not respond, incrementing non-response count.");
-                    noCount++;
-                    continue;
+                System.out.println("Proposer " + memberId + " got line: " + line);
+
+                if (line.startsWith("TIMEOUT")) {
+                    System.out.println("(Proposer prepare " + memberId + " " + proposalNumber + ") timed out");
+                    break;
+                } else if (line.startsWith("FINISHED")) {
+                    break;
                 }
                 
                 // System.out.println("Proposer " + memberId + " received prepare response: " + line);
@@ -67,12 +70,10 @@ public class Proposer {
                         proposedValue = result.proposal.value;
                         proposedValueProposalId = result.proposal.proposalNumber;
                     }
-                } else {
-                    noCount++;
                 }
             }
             
-            // System.out.println("Proposer " + memberId + " closing socket");
+            System.out.println("Proposer " + memberId + " closing socket");
             
             socket.close();
         } catch (IOException e) {
@@ -88,7 +89,7 @@ public class Proposer {
         
         //Only send accept requests if we got majority on propose responses
         if (promiseCount >= neededMajority) {
-            // System.out.println("\nProposer " + memberId + " got prepare majority\n");
+            System.out.println("\nProposer " + memberId + " got prepare majority\n");
             
             int acceptCount = 0;
             
@@ -106,16 +107,17 @@ public class Proposer {
                 
                 out.println("Proposer " + memberId + " Accept " + proposalNumber + " " + acceptedValue);
                 
-                int noCount = 0;
+                boolean allAcceptorsResponded = false;
                 String line;
                 
                 while ((line = in.readLine()) != null
-                && (acceptCount + noCount) < numAcceptors
+                && !allAcceptorsResponded
                 ) { 
-                    if (line.startsWith("NORESPONSE")) {
-                        System.out.println("An acceptor did not respond, incrementing non-response count.");
-                        noCount++;
-                        continue;
+                    if (line.startsWith("TIMEOUT")) {
+                        System.out.println("(Proposer prepare " + memberId + " " + proposalNumber + ") timed out");
+                        break;
+                    } else if (line.startsWith("FINISHED")) {
+                        allAcceptorsResponded = true;
                     }
                     
                     ResponseWithOptionalProposal result = parseAcceptorResponse(line);
@@ -127,8 +129,6 @@ public class Proposer {
                         if (result.proposal != null) {
                             acceptedValue = result.proposal.value;
                         }
-                    } else {
-                        noCount++;
                     }
                 }
                 
@@ -153,15 +153,15 @@ public class Proposer {
     
     //Response will be of format "OK", "REJECTED", or "OK <previously accepted proposal ID> <previously accepted proposal value>"
     public ResponseWithOptionalProposal parseAcceptorResponse(String line) {
-        if (line.startsWith("OK")) {
+        if (line.contains("OK")) {
             String[] responseParams = line.split("\\s+");
             
             //Regular okay, no previously accepted proposal
-            if (responseParams.length < 3) {
+            if (responseParams.length < 4) {
                 return new ResponseWithOptionalProposal();
             } else {
-                int acceptedProposalId = Integer.parseInt(responseParams[1]);
-                String acceptedProposalValue = responseParams[2];
+                int acceptedProposalId = Integer.parseInt(responseParams[2]);
+                String acceptedProposalValue = responseParams[3];
                 return new ResponseWithOptionalProposal(new Proposal(acceptedProposalId, acceptedProposalValue));
             }
         }

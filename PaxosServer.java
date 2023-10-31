@@ -13,6 +13,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 /*
 * Todo:
+*      - Finish implementing socket communication instead of message queues
 *      - Fix timeouts causing hangs
 *      - Automated testing
 */
@@ -23,12 +24,12 @@ import enums.ConnectionSource;
 
 public class PaxosServer {
     
-    public static List<Integer> currentProposers = new ArrayList<>();
-    public static List<Integer> currentAcceptors = new ArrayList<>();
     public static ServerSocket serverSocket;
     
-    public static Map<Integer, LinkedBlockingQueue<String>> proposerToAcceptorMessageQueues = new HashMap<Integer, LinkedBlockingQueue<String>>(); // Shared message queue for acceptors
-    public static Map<Integer, LinkedBlockingQueue<String>> acceptorToProposerMessageQueues = new HashMap<Integer, LinkedBlockingQueue<String>>(); // Shared queue for acceptor responses
+    public static Map<Integer, Socket> proposerSockets = new HashMap<>();
+    public static Map<Integer, Socket> acceptorSockets = new HashMap<>();
+    
+    public static Map<Integer, Integer> proposerResponseCounts = new HashMap<>();
     
     public static ExecutorService threadPool = Executors.newCachedThreadPool();
     
@@ -116,29 +117,53 @@ public class PaxosServer {
     int proposalNumber,
     String value
     ) {
-        if (!currentProposers.contains(memberId)) {
-            currentProposers.add(memberId);
+        if (!proposerSockets.containsKey(memberId) || proposerSockets.get(memberId) == null) {
+            proposerSockets.put(memberId, socket);
+            proposerResponseCounts.put(memberId, 0);
             
-            if (!proposerToAcceptorMessageQueues.containsKey(memberId - 1)) {
-                proposerToAcceptorMessageQueues.put(memberId - 1, new LinkedBlockingQueue<>());
-            }
-            
-            if (!acceptorToProposerMessageQueues.containsKey(memberId - 1)) {
-                acceptorToProposerMessageQueues.put(memberId - 1, new LinkedBlockingQueue<>());
-            }
-            
-            System.out.println("Proposer " + memberId + " added to current proposers. New size: Acceptors " + acceptorToProposerMessageQueues.size() + ", Proposers " + proposerToAcceptorMessageQueues.size());
+            System.out.println("Proposer " + memberId + " added to current proposers. Total proposers: " + proposerSockets.size());
         }
         
-        switch (requestPhase) {
-            case Prepare:
-            handlePrepareRequest(socket, out, memberId, proposalNumber);
-            break;
+        threadPool.submit(() -> {
+            switch (requestPhase) {
+                case Prepare:
+                handlePrepareRequest(socket, out, memberId, proposalNumber);
+                break;
+                
+                case Accept:
+                handleAcceptRequest(socket, out, memberId, proposalNumber, value);
+                break;
+            }
             
-            case Accept:
-            handleAcceptRequest(socket, out, memberId, proposalNumber, value);
-            break;
-        }
+            long startTimeMs = System.currentTimeMillis();
+
+            //MAJORITY CONSTANT
+            int numAcceptors = 3;
+            while (
+                proposerResponseCounts.get(memberId) < numAcceptors
+            && (System.currentTimeMillis() - 15000) < startTimeMs //set timeout on waiting
+            ) {
+                //wait
+            }
+            
+            if (proposerResponseCounts.get(memberId) < numAcceptors) {
+                System.out.println("Proposer " + memberId + " ran out of time for acceptor responses");
+                out.println("TIMEOUT");
+            } else {
+                System.out.println("Proposer " + memberId + " received responses from all acceptors");
+                out.println("FINISHED");
+            }
+            
+            try {
+                socket.close();
+            } catch (IOException e) {
+                System.out.println("Error closing socket");
+                e.printStackTrace();
+            }
+            proposerSockets.put(memberId, null);
+            proposerResponseCounts.put(memberId, 0);
+            
+        });
     }
     
     public static void handleAcceptorConnection(
@@ -147,149 +172,81 @@ public class PaxosServer {
     PrintWriter out,
     int memberId
     ) {
-        
-        if (!currentAcceptors.contains(memberId)) {
-            currentAcceptors.add(memberId);
-            proposerToAcceptorMessageQueues.put(memberId - 1, new LinkedBlockingQueue<>());
+        if (!acceptorSockets.containsKey(memberId) || acceptorSockets.get(memberId) == null) {
+            acceptorSockets.put(memberId, socket);
+            
+            System.out.println("Acceptor " + memberId + " added to listening acceptors. Total acceptors: " + acceptorSockets.size());
         }
         
-        System.out.println("Acceptor " + memberId + " added to listening acceptors. New size: Acceptors " + acceptorToProposerMessageQueues.size() + ", Proposers " + proposerToAcceptorMessageQueues.size());
+        threadPool.submit(() -> {
+            try {
+                while (!socket.isClosed()) {
+                    String message = in.readLine();
+                    
+                    if (message != null) {
+                        System.out.println("Acceptor " + memberId + " response: " + message);
+                        
+                        String[] messageParts = message.split("\\s+");
+                        
+                        int proposerMemberId = Integer.parseInt(messageParts[0]);
+                        
+                        Socket proposerSocket = proposerSockets.get(proposerMemberId);
+                        int proposerResponseCount = proposerResponseCounts.get(proposerMemberId);
+                        
+                        if (proposerSocket != null) {
+                            PrintWriter proposerOut = new PrintWriter(proposerSocket.getOutputStream(), true);
+                            proposerOut.println(message);
+
+                            proposerResponseCounts.put(proposerMemberId, proposerResponseCount + 1);
+                            System.out.println("New response count for proposer " + proposerMemberId + ": " + proposerResponseCounts.get(proposerMemberId));
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                System.out.println("Exception in handleAcceptorConnection for memberId " + memberId + ": " + e.getLocalizedMessage());
+                e.printStackTrace();
+            }
+        });
+    }
+    
+    //Handle a request from the proposer with id `memberId`, and proposal number `proposalNumber`
+    public static void handlePrepareRequest(
+    Socket socket,
+    PrintWriter out,
+    int memberId,
+    int proposalNumber
+    ) {
+        System.out.println("PREPARE REQUEST: memberId " + memberId + ", proposal number " + proposalNumber);
         
         try {
-            while (!socket.isClosed()) {
-                LinkedBlockingQueue<String> proposerQueue = proposerToAcceptorMessageQueues.get(memberId - 1);
-                LinkedBlockingQueue<String> acceptorQueue = acceptorToProposerMessageQueues.get(memberId - 1);
-                if (proposerQueue != null) {
-                    
-                    //Poll the queue for my memberId, to get messages from all proposers to me
-                    String message = proposerQueue.poll();
-                    if (message != null) {
-                        System.out.println("Acceptor " + memberId + " polled proposerMessageQueue successfully: " + message);
-                        out.println(message);
-                        
-                        int proposerMemberId = Integer.parseInt(message.split("\\s+")[1]);
-                        String line;
-                        if ((line = in.readLine()) != null) {
-                            System.out.println("Acceptor " + memberId + " response: " + line);
-                            
-                            if (acceptorQueue != null) {
-                                acceptorQueue.put(line);
-                            }
-                        }
-                    }
-                }
+            for (Socket acceptorSocket : acceptorSockets.values()) {
+                PrintWriter acceptorOut = new PrintWriter(acceptorSocket.getOutputStream(), true);
+                acceptorOut.println("Proposer " + memberId + " Prepare " + proposalNumber);
             }
-            // while (!socket.isClosed()) {
-                
-                //     // System.out.println("Current sizes of queues: proposer " + proposerToAcceptorMessageQueues.size() + ", acceptors: " + acceptorToProposerMessageQueues.size());
-                //     String message = proposerToAcceptorMessageQueues.get(memberId - 1).poll();
-                
-                //     if (message != null) {
-                    //         System.out.println("Acceptor " + memberId + " polled proposerMessageQueue successfully: " + message);
-                    //         out.println(message);
-                    
-                    //         int proposerMemberId = Integer.parseInt(message.split("\\s+")[1]);
-                    //         String line;
-                    //         if ((line = in.readLine()) != null) {
-                        //             System.out.println("Acceptor " + memberId + " response: " + line);
-                        
-                        //             acceptorToProposerMessageQueues.get(proposerMemberId - 1).put(line);
-                        //         }
-                        //     }
-                        // }
-                    } catch (IOException | InterruptedException e) {
-                        System.out.println("Error in handleAcceptorConnection");
-                        e.printStackTrace();
-                    }        
-                }
-                
-                //Handle a request from the proposer with id `memberId`, and proposal number `proposalNumber`
-                public static void handlePrepareRequest(
-                Socket socket,
-                PrintWriter out,
-                int memberId,
-                int proposalNumber
-                ) {
-                    System.out.println("PREPARE REQUEST: memberId " + memberId + ", proposal number " + proposalNumber);
-                    
-                    // new Thread(() -> {
-                        
-                        try {
-                            for (Map.Entry<Integer, LinkedBlockingQueue<String>> pQueueEntry : proposerToAcceptorMessageQueues.entrySet()) {
-                                pQueueEntry.getValue().put("Proposer " + memberId + " Prepare " + proposalNumber);
-                            }
-                            
-                            int successfulResponses = 0;
-                            int unsuccessfulResponses = 0;
-                            
-                            while ((successfulResponses + unsuccessfulResponses) < currentAcceptors.size()) {
-                                //Wait up to 15 seconds for response
-                                //Poll my own queue, which acceptors should be writing to
-                                String line = acceptorToProposerMessageQueues.get(memberId - 1).poll(3, TimeUnit.SECONDS);
-                                if (line != null) {
-                                    System.out.println("Proposer " + memberId + " polled acceptorResponseQueue successfully: " + line);
-                                    out.println(line);
-                                    successfulResponses++;
-                                } else {
-                                    System.out.println("Proposer " + memberId + " received no response from acceptor");
-                                    out.println("NORESPONSE");
-                                    unsuccessfulResponses++;
-                                }
-                                
-                                System.out.println("(Prepare " + memberId + " " + proposalNumber + ") Successful: " + successfulResponses + ", unsuccessful: " + unsuccessfulResponses);
-                            }
-                            
-                            
-                            socket.shutdownOutput();
-                            System.out.println("(Prepare " + memberId + " " + proposalNumber + ") Loop done, closed socket output");
-                            
-                            
-                        } catch (InterruptedException | IOException e) {
-                            System.out.println("Exception in handlePrepareRequest for memberId " + memberId + ": " + e.getLocalizedMessage());
-                            System.out.println("Current sizes of queues: proposer " + proposerToAcceptorMessageQueues.size() + ", acceptor: " + acceptorToProposerMessageQueues.size());
-                            e.printStackTrace();
-                        }
-                        // }).start();
-                    }
-                    
-                    public static void handleAcceptRequest(
-                    Socket socket,
-                    PrintWriter out,
-                    int memberId,
-                    int proposalNumber,
-                    String value
-                    ) {
-                        System.out.println("ACCEPT REQUEST: memberId " + memberId + ", proposal number " + proposalNumber + ", value " + value);
-                        
-                        // new Thread(() -> {
-                            try {
-                                for (Map.Entry<Integer, LinkedBlockingQueue<String>> pQueueEntry : proposerToAcceptorMessageQueues.entrySet()) {
-                                    pQueueEntry.getValue().put("Proposer " + memberId + " Accept " + proposalNumber + " " + value);
-                                }
-                                
-                                int successfulResponses = 0;
-                                int unsuccessfulResponses = 0;
-                                
-                                while ((successfulResponses + unsuccessfulResponses) < currentAcceptors.size()) {
-                                    //Wait up to 15 seconds for response
-                                    String line = acceptorToProposerMessageQueues.get(memberId - 1).poll(2, TimeUnit.SECONDS);
-                                    if (line != null) {
-                                        System.out.println("Proposer " + memberId + " polled acceptorResponseQueue successfully: " + line);
-                                        out.println(line);
-                                        successfulResponses++;
-                                    } else {
-                                        System.out.println("Proposer " + memberId + " received no response from acceptor");
-                                        out.println("NORESPONSE");
-                                        unsuccessfulResponses++;
-                                    }
-                                }
-                                
-                                socket.shutdownOutput();
-                                
-                            } catch (InterruptedException | IOException e) {
-                                System.out.println("Exception in handleAcceptRequest for memberId " + memberId + ": " + e.getLocalizedMessage());
-                                e.printStackTrace();
-                            }
-                            // }).start();
-                        }
-                    }
+            
+        } catch (IOException e) {
+            System.out.println("Exception in handlePrepareRequest for memberId " + memberId + ": " + e.getLocalizedMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    public static void handleAcceptRequest(
+    Socket socket,
+    PrintWriter out,
+    int memberId,
+    int proposalNumber,
+    String value
+    ) {
+        System.out.println("ACCEPT REQUEST: memberId " + memberId + ", proposal number " + proposalNumber + ", value " + value);
+        
+        try {
+            for (Socket acceptorSocket : acceptorSockets.values()) {
+                PrintWriter acceptorOut = new PrintWriter(acceptorSocket.getOutputStream(), true);
+                acceptorOut.println("Proposer " + memberId + " Accept " + proposalNumber + " " + value);
+            }
+        } catch (IOException e) {
+            System.out.println("Exception in handleAcceptRequest for memberId " + memberId + ": " + e.getLocalizedMessage());
+            e.printStackTrace();
+        }
+    }
+}
