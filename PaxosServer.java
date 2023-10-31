@@ -119,9 +119,12 @@ public class PaxosServer {
     ) {
         if (!proposerSockets.containsKey(memberId) || proposerSockets.get(memberId) == null) {
             proposerSockets.put(memberId, socket);
-            proposerResponseCounts.put(memberId, 0);
             
-            System.out.println("Proposer " + memberId + " added to current proposers. Total proposers: " + proposerSockets.size());
+            synchronized (PaxosServer.class) {
+                updateProposerResponseCounts(memberId, true);
+                System.out.println("Proposer " + memberId + " added to current proposers. Total proposers: " + proposerSockets.size());
+            }
+            
         }
         
         threadPool.submit(() -> {
@@ -136,11 +139,12 @@ public class PaxosServer {
             }
             
             long startTimeMs = System.currentTimeMillis();
-
+            
             //MAJORITY CONSTANT
             int numAcceptors = 3;
+            
             while (
-                proposerResponseCounts.get(memberId) < numAcceptors
+            proposerResponseCounts.get(memberId) < numAcceptors
             && (System.currentTimeMillis() - 15000) < startTimeMs //set timeout on waiting
             ) {
                 //wait
@@ -160,8 +164,12 @@ public class PaxosServer {
                 System.out.println("Error closing socket");
                 e.printStackTrace();
             }
+
             proposerSockets.put(memberId, null);
-            proposerResponseCounts.put(memberId, 0);
+            
+            synchronized (PaxosServer.class) {
+                updateProposerResponseCounts(memberId, true);
+            }
             
         });
     }
@@ -184,21 +192,22 @@ public class PaxosServer {
                     String message = in.readLine();
                     
                     if (message != null) {
-                        System.out.println("Acceptor " + memberId + " response: " + message);
+                        // System.out.println("Acceptor " + memberId + " response: " + message);
                         
                         String[] messageParts = message.split("\\s+");
                         
                         int proposerMemberId = Integer.parseInt(messageParts[0]);
                         
                         Socket proposerSocket = proposerSockets.get(proposerMemberId);
-                        int proposerResponseCount = proposerResponseCounts.get(proposerMemberId);
                         
                         if (proposerSocket != null) {
                             PrintWriter proposerOut = new PrintWriter(proposerSocket.getOutputStream(), true);
                             proposerOut.println(message);
-
-                            proposerResponseCounts.put(proposerMemberId, proposerResponseCount + 1);
-                            System.out.println("New response count for proposer " + proposerMemberId + ": " + proposerResponseCounts.get(proposerMemberId));
+                            
+                            synchronized (PaxosServer.class) {
+                                updateProposerResponseCounts(proposerMemberId, false);
+                                System.out.println("New response count for proposer " + proposerMemberId + ": " + proposerResponseCounts.get(proposerMemberId));
+                            }
                         }
                     }
                 }
@@ -247,6 +256,16 @@ public class PaxosServer {
         } catch (IOException e) {
             System.out.println("Exception in handleAcceptRequest for memberId " + memberId + ": " + e.getLocalizedMessage());
             e.printStackTrace();
+        }
+    }
+    
+    public static synchronized void updateProposerResponseCounts(int memberId, boolean setToZero) {
+        int count = proposerResponseCounts.getOrDefault(memberId, -1);
+        
+        if (setToZero || count == -1) {
+            proposerResponseCounts.put(memberId, 0);
+        } else {
+            proposerResponseCounts.put(memberId, count + 1);
         }
     }
 }
