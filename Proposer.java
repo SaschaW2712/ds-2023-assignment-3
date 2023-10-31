@@ -32,7 +32,7 @@ public class Proposer {
         int neededMajority = (numAcceptors / 2) + 1;
         
         try {
-            TimeUnit.SECONDS.sleep(3 - memberId); //Give acceptors a change to connect before making proposals
+            TimeUnit.SECONDS.sleep(2); //Give acceptors a change to connect before making proposals
         } catch (InterruptedException e) {
             System.out.println("InterruptedException in propose: " + e.getLocalizedMessage());
             e.printStackTrace();
@@ -56,7 +56,7 @@ public class Proposer {
                 if (line.startsWith("TIMEOUT")) {
                     System.out.println("(Proposer prepare " + memberId + " " + proposalNumber + ") timed out");
                     break;
-                } else if (line.startsWith("FINISHED")) {
+                } else if (line.startsWith("MAJORITY")) {
                     break;
                 }
                 
@@ -116,7 +116,7 @@ public class Proposer {
                     if (line.startsWith("TIMEOUT")) {
                         System.out.println("(Proposer prepare " + memberId + " " + proposalNumber + ") timed out");
                         break;
-                    } else if (line.startsWith("FINISHED")) {
+                    } else if (line.startsWith("MAJORITY")) {
                         allAcceptorsResponded = true;
                     }
                     
