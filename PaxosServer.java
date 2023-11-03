@@ -64,21 +64,19 @@ public class PaxosServer {
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                 
-                parseConnection(socket, in, out);    
+                parseConnection(socket, in, out);
             }
         } catch (IOException e) {
             outputStream.println("Server socket has closed, voting is done.");
         }
     }
     
-    public static void closeServer() {
-        outputStream.println("Closing server");
-        try {
-            serverSocket.close();
-        } catch (IOException e) {
-            outputStream.println("IOException closing server socket");
-            e.printStackTrace();
-        }
+    public static void resetConnections() {
+        System.out.println("Server has been informed that the current election is finished.");
+        System.out.println("Clearing connected sockets and response counts.");
+        proposerSockets.clear();
+        acceptorSockets.clear();
+        proposerResponseCounts.clear();
     }
     
     public static void parseConnection(
@@ -90,6 +88,10 @@ public class PaxosServer {
             try {
                 String line;
                 if ((line = in.readLine()) != null) {
+                    if (line.startsWith("DONE")) {
+                        resetConnections();
+                        return;
+                    }
                     
                     String[] input = line.split("\\s+");
                     
@@ -158,13 +160,17 @@ public class PaxosServer {
         //Add a small amount of randomness to timeout, to avoid repeated failed votes due to incrementing proposal numbers
         double timeout = 5000 + (3 * (Math.random() * 1000));
         
-        while (
-        proposerResponseCounts.get(memberId) < majority
+        while (proposerResponseCounts.get(memberId) != null
+        && proposerResponseCounts.getOrDefault(memberId, 10000) < majority
         && (System.currentTimeMillis() - timeout) < startTimeMs //set timeout on waiting
         ) {
             //wait
         }
         
+        if (proposerResponseCounts.get(memberId) == null) {
+            return;
+        }
+
         if (proposerResponseCounts.get(memberId) < majority) {
             outputStream.println("Member M" + memberId + "'s proposal timed out");
             out.println("TIMEOUT");

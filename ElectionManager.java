@@ -1,7 +1,11 @@
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -92,6 +96,16 @@ public class ElectionManager {
                 e.printStackTrace();
                 outputStream.println("Exiting.");
             }
+        }
+
+        try {
+            Socket socket = new Socket("localhost", 4567);
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            
+            out.println("DONE");
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
