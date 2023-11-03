@@ -48,8 +48,16 @@ public class PaxosServer {
                 outputStream.println("Couldn't find output file");
                 return;
             }
-        } 
+        }
 
+        for(int i = 1; i < 10; i++) {
+            if (i < 4) {
+                proposerSockets.put(i, null);
+                proposerResponseCounts.put(i, -1);
+            }
+
+            acceptorSockets.put(i, null);
+        }
         runServer();
     }
     
@@ -74,7 +82,24 @@ public class PaxosServer {
     public static void resetConnections() {
         System.out.println("Server has been informed that the current election is finished.");
         System.out.println("Clearing connected sockets and response counts.");
+        for (Socket socket : proposerSockets.values()) {
+            if (socket != null && !socket.isClosed()) {
+                try {
+                    socket.close();
+                } catch (IOException e) {}
+            }
+        }
+        
         proposerSockets.clear();
+
+        for (Socket socket : acceptorSockets.values()) {
+            if (!socket.isClosed()) {
+                try {
+                    socket.close();
+                } catch (IOException e) {}
+            }
+        }
+
         acceptorSockets.clear();
         proposerResponseCounts.clear();
     }
@@ -135,7 +160,6 @@ public class PaxosServer {
         if (!proposerSockets.containsKey(memberId) || proposerSockets.get(memberId) == null) {
             synchronized (PaxosServer.class) {
                 proposerSockets.put(memberId, socket);
-                
                 updateProposerResponseCounts(memberId, true);
             }
             
@@ -166,11 +190,11 @@ public class PaxosServer {
         ) {
             //wait
         }
-        
-        if (proposerResponseCounts.get(memberId) == null) {
-            return;
-        }
 
+        if (acceptorSockets.size() == 0 || proposerResponseCounts.get(memberId) == null) {
+            out.println("ENDED");
+        }
+        
         if (proposerResponseCounts.get(memberId) < majority) {
             outputStream.println("Member M" + memberId + "'s proposal timed out");
             out.println("TIMEOUT");

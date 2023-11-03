@@ -111,6 +111,8 @@ public class Proposer {
                         break;
                     } else if (line.startsWith("MAJORITY")) {
                         allAcceptorsResponded = true;
+                    } else if (line.startsWith("ENDED")) {
+                        return "ENDED";
                     }
                     
                     ResponseWithOptionalProposal result = parseAcceptorResponse(line);

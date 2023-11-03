@@ -1,0 +1,33 @@
+Acceptor M2 connected to server
+Acceptor M1 connected to server
+Acceptor M3 connected to server
+Acceptor M4 connected to server
+Acceptor M6 connected to server
+Acceptor M5 connected to server
+
+Finishing election and cleaning up threads
+
+Acceptor M8 connected to server
+Acceptor M9 connected to server
+Acceptor M7 connected to server
+M2's proposal did not get accept majority, trying again.
+M1's proposal did not get accept majority, trying again.
+M3's proposal did not get accept majority, trying again.
+M2's proposal did not get accept majority, trying again.
+M2's proposal did not get accept majority, trying again.
+M3's proposal did not get accept majority, trying again.
+M2's proposal did not get accept majority, trying again.
+M3's proposal did not get accept majority, trying again.
+M3's proposal did not get accept majority, trying again.
+M1's proposal did not get accept majority, trying again.
+M2's proposal did not get accept majority, trying again.
+M3's proposal did not get accept majority, trying again.
+M1's proposal did not get accept majority, trying again.
+M2's proposal did not get accept majority, trying again.
+M3's proposal did not get accept majority, trying again.
+M2's proposal did not get accept majority, trying again.
+M1's proposal did not get accept majority, trying again.
+M3's proposal did not get accept majority, trying again.
+M2's proposal did not get accept majority, trying again.
+M1's proposal did not get accept majority, trying again.
+M3's proposal did not get accept majority, trying again.
