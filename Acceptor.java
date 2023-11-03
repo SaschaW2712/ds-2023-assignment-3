@@ -33,7 +33,7 @@ public class Acceptor {
             socket = new Socket("localhost", 4567);
             out = new PrintWriter(socket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            System.out.println("Acceptor " + memberId + " connected to server");
+            System.out.println("Acceptor M" + memberId + " connected to server");
             out.println("Acceptor " + memberId);
             
             handleServerResponse();
@@ -47,7 +47,6 @@ public class Acceptor {
     }
     
     public void closeSocket() {
-        System.out.println("Closing acceptor " + memberId);
 
         try {
             if (out != null) {
@@ -59,19 +58,20 @@ public class Acceptor {
             if (socket != null) {
                 socket.close();
             }
-            System.out.println("Acceptor " + memberId + " closing socket");
+            System.out.println("Acceptor M" + memberId + " closing socket");
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
     
     public synchronized void handleServerResponse() throws IOException {        
-        System.out.println("Acceptor " + memberId + " handling server response");
         
         String line;
         try {
-            while ((line = in.readLine()) != null) {                
-                System.out.println("Acceptor " + memberId + " got line: " + line);
+            while (!socket.isClosed()
+            && in != null 
+            && (line = in.readLine()) != null
+            ) {                
                 
                 String[] args = line.split("\\s+");
                 
@@ -84,18 +84,19 @@ public class Acceptor {
                     PrepareResponse prepareResponse = prepare(proposalNumber);
                     
                     if (prepareResponse == null) {
+                        System.out.println("PREPARE RESPONSE (M" + proposerMemberId + ", proposal " + proposalNumber + "): M" + memberId + " responds REJECTED");
                         out.println(proposerMemberId + " REJECTED");
                         
                     } else if (!prepareResponse.memberResponds) {
-                        System.out.println("PREPARE RESPONSE (" + proposerMemberId + " " + proposalNumber + "): acceptor " + memberId + " does not respond");
+                        System.out.println("PREPARE RESPONSE (M" + proposerMemberId + ", proposal " + proposalNumber + "): M" + memberId + " does not respond");
                         //No output, just disconnect
                         
                     } else if (prepareResponse.acceptedProposal == null) {
-                        System.out.println("PREPARE RESPONSE (" + proposerMemberId + " " + proposalNumber + "): acceptor " + memberId + ", response OK");
+                        System.out.println("PREPARE RESPONSE (M" + proposerMemberId + ", proposal " + proposalNumber + "): M" + memberId + " responds OK");
                         out.println(proposerMemberId + " OK");
                         
                     } else {
-                        System.out.println("PREPARE RESPONSE (" + proposerMemberId + " " + proposalNumber + "): acceptor " + memberId + ", response OK " + prepareResponse.acceptedProposal.proposalNumber + " " + prepareResponse.acceptedProposal.value);
+                        System.out.println("PREPARE RESPONSE (M" + proposerMemberId + ", proposal " + proposalNumber + "): M" + memberId + " responds OK, with previously accepted proposal " + prepareResponse.acceptedProposal.proposalNumber + ", value " + prepareResponse.acceptedProposal.value + ")");
                         out.println(proposerMemberId + " OK " + prepareResponse.acceptedProposal.proposalNumber + " " + prepareResponse.acceptedProposal.value);
                     }          
                     
@@ -105,19 +106,18 @@ public class Acceptor {
                     
                     //If acceptResponse is true, it's accepted
                     if (acceptResponse) {
-                        System.out.println("ACCEPT RESPONSE (" + proposerMemberId + " " + proposalNumber + " " + value + "): acceptor " + memberId + ", response OK");
+                            System.out.println("ACCEPT RESPONSE (M" + proposerMemberId + ", proposal " + proposalNumber + ", value " + value + "): M" + memberId + " responds OK");
                         out.println(proposerMemberId + " OK");
                         
                         //If acceptResponse is null or false, it's rejected
                     } else {
-                        System.out.println("ACCEPT RESPONSE (" + proposerMemberId + " " + proposalNumber + " " + value + "): acceptor " + memberId + ", response REJECTED");
+                            System.out.println("ACCEPT RESPONSE (M" + proposerMemberId + ", proposal " + proposalNumber + ", value " + value + "): M" + memberId + " responds REJECTED");
                         out.println(proposerMemberId + " REJECTED");
                     }
                 }
             }
         } catch (IOException e) {
-            System.out.println("Error handling server response. (Acceptor " + memberId + ")");
-            e.printStackTrace();
+            return;
         }
     }
     
@@ -156,7 +156,6 @@ public class Acceptor {
         if (proposalNumber >= promisedProposalNumber) {
             promisedProposalNumber = proposalNumber;
             
-            System.out.println("Setting accepted proposal");
             acceptedProposal = new Proposal(proposalNumber, value);
             return true;
         } else {

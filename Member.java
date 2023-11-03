@@ -72,49 +72,22 @@ public class Member {
     public void runProposal(Proposer proposer) {
         String result = proposer.propose(Integer.toString(proposer.memberId));
         
-        System.out.println("Result for memberId " + proposer.memberId + ": " + result);
         
         if (result.startsWith("SUCCESS")) {
             electionWinnerMemberId = result.split("\\s+")[1];
+            System.out.println("Member ID " + memberId + " succeeded on proposal with value " + electionWinnerMemberId);
+        } else if (result.startsWith("ENDED")) {
+            return;
         } else {
             runProposal(proposer);
         }
     }
     
-    public String isElectionDone() {
-        String result = "";
-        
-        try {
-            Socket socket = new Socket("localhost", 4567);
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            
-            out.println("Election Result");
-            
-            
-            String line;
-            while ((line = in.readLine()) == null) {}
-            
-            if (line != null && line.startsWith("Done")) {
-                result = line.split("\\s+")[1];
-            }
-            
-            socket.close();
-            
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        
-        return result;
-    }
-    
     public void finishElection() {
-        System.out.println("Closing member " + memberId);
         try {
             if (proposer != null && proposerThread.isAlive()) {
                 proposer.finish();
                 proposerThread.join();
-                System.out.println("Proposer " + memberId + " thread joined");
             }
             
             acceptor.closeSocket();
@@ -122,8 +95,6 @@ public class Member {
                 acceptorThread.join();
             }
             
-            System.out.println("Acceptor " + memberId + " thread joined");
-
         } catch (InterruptedException e) {
             System.out.println("Interrupted exception for thread join: " + proposerThread.getName());
             e.printStackTrace();
@@ -155,7 +126,7 @@ public class Member {
             Location otherMembersHomeLocation = new Location(InternetSpeed.High, ResponseLikelihood.Certain);
             Location workLocation = new Location(InternetSpeed.Medium, ResponseLikelihood.Impossible);
             memberLocations.add(new LocationWithRegularity(otherMembersHomeLocation, Regularity.Sometimes));
-            memberLocations.add(new LocationWithRegularity(workLocation, Regularity.Sometimes));
+            memberLocations.add(new LocationWithRegularity(workLocation, Regularity.Rarely));
         }
         
         this.responsiveness = new MemberResponsiveness(memberLocations);

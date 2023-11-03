@@ -15,7 +15,6 @@ import java.util.concurrent.Executors;
 *      - Clean up output
 *      - Automated testing
 */
-import java.util.concurrent.TimeUnit;
 
 import enums.RequestPhase;
 import enums.ConnectionSource;
@@ -56,7 +55,7 @@ public class PaxosServer {
     }
     
     public static void closeServer() {
-        System.out.println("Closing Paxos server socket");
+        System.out.println("Closing server");
         try {
             serverSocket.close();
         } catch (IOException e) {
@@ -74,12 +73,6 @@ public class PaxosServer {
             try {
                 String line;
                 if ((line = in.readLine()) != null) {
-                    System.out.println("Incoming connection: " + line);
-
-                    if (line.startsWith("Election Result")) {
-                        handleElectionResultRequest(socket);
-                        return;
-                    }
                     
                     String[] input = line.split("\\s+");
                     
@@ -110,12 +103,6 @@ public class PaxosServer {
             }
         });
     }
-
-    public static void handleElectionResultRequest(
-        Socket socket
-    ) {
-
-    }
     
     public static void handleProposerConnection(
     Socket socket,
@@ -127,62 +114,60 @@ public class PaxosServer {
     String value
     ) {
         if (!proposerSockets.containsKey(memberId) || proposerSockets.get(memberId) == null) {
-            proposerSockets.put(memberId, socket);
-            
             synchronized (PaxosServer.class) {
+                proposerSockets.put(memberId, socket);
+                
                 updateProposerResponseCounts(memberId, true);
-                System.out.println("Proposer " + memberId + " added to current proposers. Total proposers: " + proposerSockets.size());
             }
             
         }
         
-            switch (requestPhase) {
-                case Prepare:
-                handlePrepareRequest(socket, out, memberId, proposalNumber);
-                break;
-                
-                case Accept:
-                handleAcceptRequest(socket, out, memberId, proposalNumber, value);
-                break;
-            }
+        switch (requestPhase) {
+            case Prepare:
+            handlePrepareRequest(socket, out, memberId, proposalNumber);
+            break;
             
-            long startTimeMs = System.currentTimeMillis();
-            
-            //MAJORITY CONSTANT
-            int majority = 5;
-            
-
-            //Add a small amount of randomness to timeout, to avoid repeated failed votes due to incrementing proposal numbers
-            double timeout = 5000 + (3 * (Math.random() * 1000));
-            
-            while (
-            proposerResponseCounts.get(memberId) < majority
-            && (System.currentTimeMillis() - timeout) < startTimeMs //set timeout on waiting
-            ) {
-                //wait
-            }
-            
-            if (proposerResponseCounts.get(memberId) < majority) {
-                System.out.println("Proposer " + memberId + " ran out of time for acceptor responses");
-                out.println("TIMEOUT");
-            } else {
-                System.out.println("Proposer " + memberId + " received responses from majority of acceptors");
-                out.println("MAJORITY");
-            }
-            
-            try {
-                socket.close();
-            } catch (IOException e) {
-                System.out.println("Error closing socket");
-                e.printStackTrace();
-            }
-            
-            proposerSockets.put(memberId, null);
-            
-            synchronized (PaxosServer.class) {
-                updateProposerResponseCounts(memberId, true);
-            }
+            case Accept:
+            handleAcceptRequest(socket, out, memberId, proposalNumber, value);
+            break;
         }
+        
+        long startTimeMs = System.currentTimeMillis();
+        
+        //MAJORITY CONSTANT
+        int majority = 5;
+        
+        
+        //Add a small amount of randomness to timeout, to avoid repeated failed votes due to incrementing proposal numbers
+        double timeout = 5000 + (3 * (Math.random() * 1000));
+        
+        while (
+        proposerResponseCounts.get(memberId) < majority
+        && (System.currentTimeMillis() - timeout) < startTimeMs //set timeout on waiting
+        ) {
+            //wait
+        }
+        
+        if (proposerResponseCounts.get(memberId) < majority) {
+            System.out.println("Member M" + memberId + "'s proposal timed out");
+            out.println("TIMEOUT");
+        } else {
+            System.out.println("Member " + memberId + " received responses from majority of acceptors");
+            out.println("MAJORITY");
+        }
+        
+        try {
+            socket.close();
+        } catch (IOException e) {
+            System.out.println("Error closing socket");
+            e.printStackTrace();
+        }
+        
+        synchronized (PaxosServer.class) {
+            proposerSockets.put(memberId, null);
+            updateProposerResponseCounts(memberId, true);
+        }
+    }
     
     public static void handleAcceptorConnection(
     Socket socket,
@@ -191,43 +176,38 @@ public class PaxosServer {
     int memberId
     ) {
         if (!acceptorSockets.containsKey(memberId) || acceptorSockets.get(memberId) == null) {
-            acceptorSockets.put(memberId, socket);
-            
-            System.out.println("Acceptor " + memberId + " added to listening acceptors. Total acceptors: " + acceptorSockets.size());
+            synchronized (PaxosServer.class) {
+                acceptorSockets.put(memberId, socket);
+            }
         }
         
-            try {
-                while (!socket.isClosed()) {
-                    String message = in.readLine();
+        try {
+            while (!socket.isClosed()) {
+                String message = in.readLine();
+                
+                if (message != null) {                    
+                    String[] messageParts = message.split("\\s+");
                     
-                    if (message != null) {
-                        // System.out.println("Acceptor " + memberId + " response: " + message);
-                        
-                        String[] messageParts = message.split("\\s+");
-                        
-                        int proposerMemberId = Integer.parseInt(messageParts[0]);
-                        
-                        Socket proposerSocket = proposerSockets.get(proposerMemberId);
-                        
-                        synchronized (PaxosServer.class) {
-                            if (proposerSocket != null && !socket.isClosed()) {
-                                PrintWriter proposerOut = new PrintWriter(proposerSocket.getOutputStream(), true);
-                                proposerOut.println(message);
-                                
-                                updateProposerResponseCounts(proposerMemberId, false);
-                                System.out.println("New response count for proposer " + proposerMemberId + ": " + proposerResponseCounts.get(proposerMemberId));
-                            } else {
-                                System.out.println("(Acceptor " + memberId + ") Socket for member " + proposerMemberId + " is closed or null");
-                            }
+                    int proposerMemberId = Integer.parseInt(messageParts[0]);
+                    
+                    Socket proposerSocket = proposerSockets.get(proposerMemberId);
+                    
+                    synchronized (PaxosServer.class) {
+                        if (proposerSocket != null && !socket.isClosed()) {
+                            PrintWriter proposerOut = new PrintWriter(proposerSocket.getOutputStream(), true);
+                            proposerOut.println(message);
+                            
+                            updateProposerResponseCounts(proposerMemberId, false);
+                            System.out.println("Member M" + proposerMemberId + " response count: " + proposerResponseCounts.get(proposerMemberId));
                         }
                     }
                 }
-            } catch (SocketException e) {
-                System.err.println("Acceptor cannot respond to proposer, their socket has been closed (usually due to getting a majority vote)");
-            } catch (IOException e) {
-                System.out.println("IOException in handleAcceptorConnection for memberId " + memberId + ": " + e.getLocalizedMessage());
-                e.printStackTrace();
             }
+        } catch (SocketException e) {
+        } catch (IOException e) {
+            System.out.println("IOException in handleAcceptorConnection for memberId " + memberId + ": " + e.getLocalizedMessage());
+            e.printStackTrace();
+        }
     }
     
     //Handle a request from the proposer with id `memberId`, and proposal number `proposalNumber`
@@ -237,12 +217,14 @@ public class PaxosServer {
     int memberId,
     int proposalNumber
     ) {
-        System.out.println("PREPARE REQUEST: memberId " + memberId + ", proposal number " + proposalNumber);
+        System.out.println("\nPREPARE REQUEST: Member M" + memberId + ", proposal " + proposalNumber + "\n");
         
         try {
-            for (Socket acceptorSocket : acceptorSockets.values()) {
-                PrintWriter acceptorOut = new PrintWriter(acceptorSocket.getOutputStream(), true);
-                acceptorOut.println("Proposer " + memberId + " Prepare " + proposalNumber);
+            synchronized (PaxosServer.class) {
+                for (Socket acceptorSocket : acceptorSockets.values()) {
+                    PrintWriter acceptorOut = new PrintWriter(acceptorSocket.getOutputStream(), true);
+                    acceptorOut.println("Proposer " + memberId + " Prepare " + proposalNumber);
+                }
             }
             
         } catch (IOException e) {
@@ -258,7 +240,7 @@ public class PaxosServer {
     int proposalNumber,
     String value
     ) {
-        System.out.println("ACCEPT REQUEST: memberId " + memberId + ", proposal number " + proposalNumber + ", value " + value);
+        System.out.println("\nPREPARE REQUEST: Member M" + memberId + ", proposal " + proposalNumber + ", value " + value + "\n");
         
         try {
             for (Socket acceptorSocket : acceptorSockets.values()) {

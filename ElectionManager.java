@@ -50,7 +50,7 @@ public class ElectionManager {
     }
     
     public static void finishElection() {
-        System.out.println("Finishing");
+        System.out.println("Finishing election and cleaning up threads");
         for (Member member : members) {
             member.finishElection();
         }
