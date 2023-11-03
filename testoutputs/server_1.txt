@@ -1,0 +1,70 @@
+Paxos server started on port 4567
+
+PREPARE REQUEST: Member M3, proposal 3
+
+
+PREPARE REQUEST: Member M1, proposal 1
+
+
+PREPARE REQUEST: Member M2, proposal 2
+
+Member M1 response count: 1
+Member M3 response count: 1
+Member M3 response count: 2
+Member M3 response count: 3
+Member M3 response count: 4
+Member M3 response count: 5
+Member 3 received responses from majority of acceptors
+Member M3 response count: 6
+Member M2 response count: 1
+Member M2 response count: 2
+Member M2 response count: 3
+Member M2 response count: 4
+Member 2 received responses from majority of acceptors
+Member M2 response count: 5
+
+PREPARE REQUEST: Member M3, proposal 3, value 3
+
+Member M1 response count: 2
+Member M1 response count: 3
+Member M3 response count: 1
+Member M1 response count: 4
+
+PREPARE REQUEST: Member M2, proposal 5
+
+Member M3 response count: 2
+Member M3 response count: 3
+Member M3 response count: 4
+Member M2 response count: 1
+Member 3 received responses from majority of acceptors
+Member M3 response count: 5
+Member M2 response count: 2
+Member M2 response count: 3
+
+PREPARE REQUEST: Member M2, proposal 8
+
+Member M2 response count: 4
+Member 2 received responses from majority of acceptors
+Member M2 response count: 5
+Member 2 received responses from majority of acceptors
+
+PREPARE REQUEST: Member M2, proposal 11
+
+Member M2 response count: 1
+Member M2 response count: 2
+Member M2 response count: 3
+Member M2 response count: 4
+Member M2 response count: 5
+Member 2 received responses from majority of acceptors
+
+PREPARE REQUEST: Member M2, proposal 11, value 3
+
+Member M2 response count: 1
+Member M2 response count: 2
+Member M2 response count: 3
+Member M2 response count: 4
+Member M2 response count: 5
+Member 2 received responses from majority of acceptors
+Member M2 response count: 6
+Closing server
+Server socket has closed, voting is done.

@@ -1,14 +1,41 @@
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ElectionManager {
+    
+    public static PrintStream outputStream = new PrintStream(System.out);
+    
     public static ArrayList<Member> members = new ArrayList<>();
     public static int existingElectionWinner = -1;
     public static List<Thread> memberThreads = new ArrayList<>();
     public static volatile boolean electionFinished = false;
-
+    
+    public static boolean immediateResponse = false;
+    
     
     public static void main(String[] args) {
+        if (args.length > 0) {
+            immediateResponse = Boolean.parseBoolean(args[0]);
+        }
+        
+        if (args.length > 1) {
+            //Redirect system output if requested
+            try {
+                PrintWriter writer = new PrintWriter(args[1]);
+                writer.print("");
+                writer.close();
+                
+                outputStream = new PrintStream(new FileOutputStream(args[1], true));
+            } catch(FileNotFoundException e) {
+                outputStream.println("Couldn't find output file");
+                return;
+            }
+        } 
+        
         initMembers();
         
         runElection();
@@ -41,17 +68,17 @@ public class ElectionManager {
             
             memberThread.start();
         }
-
+        
         while (!electionFinished) {}
-
+        
         finishElection();
         
-        System.out.println("\nMember " + existingElectionWinner + " won the election!");
-        System.out.println("You can now exit the Paxos server.");
+        outputStream.println("\nMember " + existingElectionWinner + " won the election!");
+        outputStream.println("You can now exit the Paxos server.");
     }
     
     public static void finishElection() {
-        System.out.println("\nFinishing election and cleaning up threads\n");
+        outputStream.println("\nFinishing election and cleaning up threads\n");
         for (Member member : members) {
             member.finishElection();
         }
@@ -59,13 +86,12 @@ public class ElectionManager {
         for (Thread thread : memberThreads) {
             try {
                 thread.join();
-                System.out.println("Thread " + thread.getName() + " joined");
+                outputStream.println("Thread " + thread.getName() + " joined");
             } catch (InterruptedException e) {
-                System.out.println("Interrupted exception for thread join: " + thread.getName());
+                outputStream.println("Interrupted exception for thread join: " + thread.getName());
                 e.printStackTrace();
-                System.out.println("Exiting.");
+                outputStream.println("Exiting.");
             }
         }
-        
     }
 }

@@ -8,3 +8,6 @@ paxos: compile
 
 election: compile
 	java -classpath classfiles ElectionManager
+
+test: compile
+	java -classpath classfiles ElectionTests

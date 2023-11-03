@@ -6,6 +6,8 @@ import dataclasses.ResponseWithOptionalProposal;
 
 
 public class Proposer {
+    public static PrintStream outputStream = new PrintStream(System.out);
+
     int memberId;
     int proposalNumber;
     int numAcceptors;
@@ -19,6 +21,26 @@ public class Proposer {
         this.proposalNumber = -3 + memberId;
         
         this.numAcceptors = numAcceptors;
+    }
+
+    public Proposer(int memberId, int numAcceptors, String outputFilePath) {
+        this.memberId = memberId;
+        
+        //ensure uniqueness (proposal number is always incremented by the same amount, so they interleave between members)
+        this.proposalNumber = -3 + memberId;
+        
+        this.numAcceptors = numAcceptors;
+
+        try {
+            PrintWriter writer = new PrintWriter(outputFilePath);
+            writer.print("");
+            writer.close();
+            
+            outputStream = new PrintStream(new FileOutputStream(outputFilePath, true));
+        } catch(FileNotFoundException e) {
+            outputStream.println("Couldn't find output file");
+            return;
+        }
     }
     
     public String propose(String value) {
@@ -77,7 +99,7 @@ public class Proposer {
         
         //Only send accept requests if we got majority on propose responses
         if (promiseCount >= neededMajority) {
-            System.out.println("M" + memberId + "'s proposal got prepare majority for value " + acceptedValue);
+            outputStream.println("M" + memberId + "'s proposal got prepare majority for value " + acceptedValue);
             
             int acceptCount = 0;
             
@@ -117,15 +139,15 @@ public class Proposer {
             }
             
             if (acceptCount >= (numAcceptors / 2) + 1) {
-                System.out.println("M" + memberId + "'s proposal got accept majority for value " + acceptedValue);
+                outputStream.println("M" + memberId + "'s proposal got accept majority for value " + acceptedValue);
                 return "SUCCESS " + acceptedValue;
             }
             
-            System.out.println("M" + memberId + "'s proposal did not get accept majority, trying again.");
+            outputStream.println("M" + memberId + "'s proposal did not get accept majority, trying again.");
             return "FAILURE";
         }
         
-        System.out.println("M" + memberId + "'s proposal did not get accept majority, trying again.");
+        outputStream.println("M" + memberId + "'s proposal did not get accept majority, trying again.");
         return "FAILURE";
     }
     

@@ -1,0 +1,15 @@
+
+Finishing election and cleaning up threads
+
+Thread member1 joined
+Thread member2 joined
+Thread member3 joined
+Thread member4 joined
+Thread member5 joined
+Thread member6 joined
+Thread member7 joined
+Thread member8 joined
+Thread member9 joined
+
+Member 3 won the election!
+You can now exit the Paxos server.

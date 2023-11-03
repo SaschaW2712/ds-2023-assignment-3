@@ -1,6 +1,9 @@
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -14,11 +17,15 @@ import enums.Regularity;
 import enums.ResponseLikelihood;
 
 public class Member {
+    public static PrintStream outputStream = new PrintStream(System.out);
+    
     int memberId;
     Proposer proposer;
     Acceptor acceptor;
     String electionWinnerMemberId;
     MemberResponsiveness responsiveness;
+    
+    boolean immediateResponse = false;
     
     Thread proposerThread;
     Thread acceptorThread;
@@ -33,6 +40,31 @@ public class Member {
         
         initMemberResponsiveness(memberId);
         this.acceptor = new Acceptor(memberId, responsiveness);
+    }
+    
+    public Member(int memberId, boolean shouldPropose, boolean immediateResponse, String outputFilePath) {
+        this.memberId = memberId;
+        
+        if (shouldPropose) {
+            //MAJORITY CONSTANT
+            this.proposer = new Proposer(memberId, 9, outputFilePath);
+        }
+        
+        this.immediateResponse = immediateResponse;
+        
+        initMemberResponsiveness(memberId);
+        this.acceptor = new Acceptor(memberId, responsiveness, immediateResponse, outputFilePath);
+        
+        try {
+            PrintWriter writer = new PrintWriter(outputFilePath);
+            writer.print("");
+            writer.close();
+            
+            outputStream = new PrintStream(new FileOutputStream(outputFilePath, true));
+        } catch(FileNotFoundException e) {
+            outputStream.println("Couldn't find output file");
+            return;
+        }
     }
     
     public String elect() {
@@ -58,7 +90,7 @@ public class Member {
                 proposerThread.join();
                 return electionWinnerMemberId;
             } catch (InterruptedException e) {
-                System.out.println("Interrupted exception for thread join: " + proposerThread.getName());
+                outputStream.println("Interrupted exception for thread join: " + proposerThread.getName());
                 e.printStackTrace();
                 return null;
             }
@@ -75,7 +107,7 @@ public class Member {
         
         if (result.startsWith("SUCCESS")) {
             electionWinnerMemberId = result.split("\\s+")[1];
-            System.out.println("Member ID " + memberId + " succeeded on proposal with value " + electionWinnerMemberId);
+            outputStream.println("Member ID " + memberId + " succeeded on proposal with value " + electionWinnerMemberId);
         } else if (result.startsWith("ENDED")) {
             return;
         } else {
@@ -96,7 +128,7 @@ public class Member {
             }
             
         } catch (InterruptedException e) {
-            System.out.println("Interrupted exception for thread join: " + proposerThread.getName());
+            outputStream.println("Interrupted exception for thread join: " + proposerThread.getName());
             e.printStackTrace();
         }
         

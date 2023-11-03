@@ -1,6 +1,9 @@
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -21,6 +24,8 @@ import enums.ConnectionSource;
 
 public class PaxosServer {
     
+    public static PrintStream outputStream = new PrintStream(System.out);
+    
     public static ServerSocket serverSocket;
     
     public static Map<Integer, Socket> proposerSockets = new HashMap<>();
@@ -30,17 +35,29 @@ public class PaxosServer {
     
     public static ExecutorService threadPool = Executors.newCachedThreadPool();
     
-    public static void main(String[] args) {
+    public static void main(String[] args) { 
+        if (args.length > 0) {
+            //Redirect system output if requested
+            try {
+                PrintWriter writer = new PrintWriter(args[0]);
+                writer.print("");
+                writer.close();
+                
+                outputStream = new PrintStream(new FileOutputStream(args[0], true));
+            } catch(FileNotFoundException e) {
+                outputStream.println("Couldn't find output file");
+                return;
+            }
+        } 
+
         runServer();
-        
-        // closeServer(); //TODO: run this when voting done somehow
     }
     
     
     public static void runServer() {
         try {
             serverSocket = new ServerSocket(4567);
-            System.out.println("Paxos server started on port 4567");
+            outputStream.println("Paxos server started on port 4567");
             
             while (!serverSocket.isClosed()) {
                 Socket socket = serverSocket.accept();
@@ -50,16 +67,16 @@ public class PaxosServer {
                 parseConnection(socket, in, out);    
             }
         } catch (IOException e) {
-            System.out.println("Server socket has closed, voting is done.");
+            outputStream.println("Server socket has closed, voting is done.");
         }
     }
     
     public static void closeServer() {
-        System.out.println("Closing server");
+        outputStream.println("Closing server");
         try {
             serverSocket.close();
         } catch (IOException e) {
-            System.out.println("IOException closing server socket");
+            outputStream.println("IOException closing server socket");
             e.printStackTrace();
         }
     }
@@ -98,7 +115,7 @@ public class PaxosServer {
                 }
                 
             } catch (Exception e) {
-                System.out.println("Error in parseConnection: " + e.getLocalizedMessage());
+                outputStream.println("Error in parseConnection: " + e.getLocalizedMessage());
                 e.printStackTrace();
             }
         });
@@ -149,17 +166,17 @@ public class PaxosServer {
         }
         
         if (proposerResponseCounts.get(memberId) < majority) {
-            System.out.println("Member M" + memberId + "'s proposal timed out");
+            outputStream.println("Member M" + memberId + "'s proposal timed out");
             out.println("TIMEOUT");
         } else {
-            System.out.println("Member " + memberId + " received responses from majority of acceptors");
+            outputStream.println("Member " + memberId + " received responses from majority of acceptors");
             out.println("MAJORITY");
         }
         
         try {
             socket.close();
         } catch (IOException e) {
-            System.out.println("Error closing socket");
+            outputStream.println("Error closing socket");
             e.printStackTrace();
         }
         
@@ -198,14 +215,14 @@ public class PaxosServer {
                             proposerOut.println(message);
                             
                             updateProposerResponseCounts(proposerMemberId, false);
-                            System.out.println("Member M" + proposerMemberId + " response count: " + proposerResponseCounts.get(proposerMemberId));
+                            outputStream.println("Member M" + proposerMemberId + " response count: " + proposerResponseCounts.get(proposerMemberId));
                         }
                     }
                 }
             }
         } catch (SocketException e) {
         } catch (IOException e) {
-            System.out.println("IOException in handleAcceptorConnection for memberId " + memberId + ": " + e.getLocalizedMessage());
+            outputStream.println("IOException in handleAcceptorConnection for memberId " + memberId + ": " + e.getLocalizedMessage());
             e.printStackTrace();
         }
     }
@@ -217,7 +234,7 @@ public class PaxosServer {
     int memberId,
     int proposalNumber
     ) {
-        System.out.println("\nPREPARE REQUEST: Member M" + memberId + ", proposal " + proposalNumber + "\n");
+        outputStream.println("\nPREPARE REQUEST: Member M" + memberId + ", proposal " + proposalNumber + "\n");
         
         try {
             synchronized (PaxosServer.class) {
@@ -228,7 +245,7 @@ public class PaxosServer {
             }
             
         } catch (IOException e) {
-            System.out.println("Exception in handlePrepareRequest for memberId " + memberId + ": " + e.getLocalizedMessage());
+            outputStream.println("Exception in handlePrepareRequest for memberId " + memberId + ": " + e.getLocalizedMessage());
             e.printStackTrace();
         }
     }
@@ -240,7 +257,7 @@ public class PaxosServer {
     int proposalNumber,
     String value
     ) {
-        System.out.println("\nPREPARE REQUEST: Member M" + memberId + ", proposal " + proposalNumber + ", value " + value + "\n");
+        outputStream.println("\nPREPARE REQUEST: Member M" + memberId + ", proposal " + proposalNumber + ", value " + value + "\n");
         
         try {
             for (Socket acceptorSocket : acceptorSockets.values()) {
@@ -248,7 +265,7 @@ public class PaxosServer {
                 acceptorOut.println("Proposer " + memberId + " Accept " + proposalNumber + " " + value);
             }
         } catch (IOException e) {
-            System.out.println("Exception in handleAcceptRequest for memberId " + memberId + ": " + e.getLocalizedMessage());
+            outputStream.println("Exception in handleAcceptRequest for memberId " + memberId + ": " + e.getLocalizedMessage());
             e.printStackTrace();
         }
     }
