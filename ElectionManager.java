@@ -4,6 +4,9 @@ import java.util.List;
 public class ElectionManager {
     public static ArrayList<Member> members = new ArrayList<>();
     public static int existingElectionWinner = -1;
+    public static List<Thread> memberThreads = new ArrayList<>();
+    public static volatile boolean electionFinished = false;
+
     
     public static void main(String[] args) {
         initMembers();
@@ -19,7 +22,6 @@ public class ElectionManager {
     }
     
     public static void runElection() {
-        List<Thread> memberThreads = new ArrayList<>();
         
         for (Member member : members) {
             Thread memberThread = new Thread(() -> {
@@ -28,6 +30,7 @@ public class ElectionManager {
                     int winnerInt = Integer.parseInt(winner);
                     if (existingElectionWinner == -1 || winnerInt == existingElectionWinner) {
                         existingElectionWinner = winnerInt;
+                        electionFinished = true;
                     }
                 }
             });
@@ -38,12 +41,24 @@ public class ElectionManager {
             
             memberThread.start();
         }
+
+        while (!electionFinished) {}
+
+        finishElection();
         
+        System.out.println("\nMember " + existingElectionWinner + " won the election!");
+    }
+    
+    public static void finishElection() {
+        System.out.println("Finishing");
+        for (Member member : members) {
+            member.finishElection();
+        }
         
         for (Thread thread : memberThreads) {
             try {
                 thread.join();
-                thread.interrupt();
+                System.out.println("Thread " + thread.getName() + " joined");
             } catch (InterruptedException e) {
                 System.out.println("Interrupted exception for thread join: " + thread.getName());
                 e.printStackTrace();
@@ -51,6 +66,5 @@ public class ElectionManager {
             }
         }
         
-        System.out.println("Member " + existingElectionWinner + " won the election!");
     }
 }

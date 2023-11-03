@@ -4,7 +4,7 @@ package enums;
 public enum InternetSpeed {
     High(0),
     Medium(1),
-    Low(3);
+    Low(2);
 
     public final int delay;
 

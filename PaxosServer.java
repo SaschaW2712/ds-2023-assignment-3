@@ -153,7 +153,7 @@ public class PaxosServer {
             
 
             //Add a small amount of randomness to timeout, to avoid repeated failed votes due to incrementing proposal numbers
-            double timeout = 5000 + (1000 * Math.random());
+            double timeout = 5000 + (3 * (Math.random() * 1000));
             
             while (
             proposerResponseCounts.get(memberId) < majority

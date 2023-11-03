@@ -9,7 +9,6 @@ import java.util.List;
 import dataclasses.Location;
 import dataclasses.LocationWithRegularity;
 import dataclasses.MemberResponsiveness;
-import dataclasses.ResponseWithOptionalProposal;
 import enums.InternetSpeed;
 import enums.Regularity;
 import enums.ResponseLikelihood;
@@ -57,7 +56,6 @@ public class Member {
         if (proposerThread != null) {
             try {
                 proposerThread.join();
-                System.out.println("here");
                 return electionWinnerMemberId;
             } catch (InterruptedException e) {
                 System.out.println("Interrupted exception for thread join: " + proposerThread.getName());
@@ -106,8 +104,31 @@ public class Member {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
+        
         return result;
+    }
+    
+    public void finishElection() {
+        System.out.println("Closing member " + memberId);
+        try {
+            if (proposer != null && proposerThread.isAlive()) {
+                proposer.finish();
+                proposerThread.join();
+                System.out.println("Proposer " + memberId + " thread joined");
+            }
+            
+            acceptor.closeSocket();
+            if (acceptorThread.isAlive()) {
+                acceptorThread.join();
+            }
+            
+            System.out.println("Acceptor " + memberId + " thread joined");
+
+        } catch (InterruptedException e) {
+            System.out.println("Interrupted exception for thread join: " + proposerThread.getName());
+            e.printStackTrace();
+        }
+        
     }
     
     public void initMemberResponsiveness(int memberId) {

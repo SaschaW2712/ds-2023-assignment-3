@@ -9,6 +9,8 @@ public class Proposer {
     int memberId;
     int proposalNumber;
     int numAcceptors;
+
+    Socket socket;
     
     public Proposer(int memberId, int numAcceptors) {
         this.memberId = memberId;
@@ -31,7 +33,7 @@ public class Proposer {
         int neededMajority = (numAcceptors / 2) + 1;
         
         try {
-            Socket socket = new Socket("localhost", 4567);
+            socket = new Socket("localhost", 4567);
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             
@@ -40,8 +42,9 @@ public class Proposer {
             boolean allAcceptorsResponded = false;
             
             String line;
-            while ((line = in.readLine()) != null
-            && !allAcceptorsResponded
+            while (!socket.isClosed()
+                && (line = in.readLine()) != null
+                && !allAcceptorsResponded
             ) {
                 System.out.println("Proposer " + memberId + " got line: " + line);
                 
@@ -150,5 +153,17 @@ public class Proposer {
         }
         
         return null;
+    }
+
+    public void finish() {
+        System.out.println("Closing proposer " + memberId);
+
+        if (!socket.isClosed()) {
+            try {
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
