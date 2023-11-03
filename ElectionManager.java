@@ -47,10 +47,11 @@ public class ElectionManager {
         finishElection();
         
         System.out.println("\nMember " + existingElectionWinner + " won the election!");
+        System.out.println("You can now exit the Paxos server.");
     }
     
     public static void finishElection() {
-        System.out.println("Finishing election and cleaning up threads");
+        System.out.println("\nFinishing election and cleaning up threads\n");
         for (Member member : members) {
             member.finishElection();
         }

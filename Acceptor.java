@@ -96,7 +96,7 @@ public class Acceptor {
                         out.println(proposerMemberId + " OK");
                         
                     } else {
-                        System.out.println("PREPARE RESPONSE (M" + proposerMemberId + ", proposal " + proposalNumber + "): M" + memberId + " responds OK, with previously accepted proposal " + prepareResponse.acceptedProposal.proposalNumber + ", value " + prepareResponse.acceptedProposal.value + ")");
+                        System.out.println("PREPARE RESPONSE (M" + proposerMemberId + ", proposal " + proposalNumber + "): M" + memberId + " responds OK, with previously accepted proposal " + prepareResponse.acceptedProposal.proposalNumber + ", value " + prepareResponse.acceptedProposal.value);
                         out.println(proposerMemberId + " OK " + prepareResponse.acceptedProposal.proposalNumber + " " + prepareResponse.acceptedProposal.value);
                     }          
                     

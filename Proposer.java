@@ -77,7 +77,7 @@ public class Proposer {
         
         //Only send accept requests if we got majority on propose responses
         if (promiseCount >= neededMajority) {
-            System.out.println("Proposer " + memberId + " got prepare majority for value " + acceptedValue);
+            System.out.println("M" + memberId + "'s proposal got prepare majority for value " + acceptedValue);
             
             int acceptCount = 0;
             
@@ -117,15 +117,15 @@ public class Proposer {
             }
             
             if (acceptCount >= (numAcceptors / 2) + 1) {
-                System.out.println("Proposer " + memberId + " got accept majority for value " + acceptedValue);
+                System.out.println("M" + memberId + "'s proposal got accept majority for value " + acceptedValue);
                 return "SUCCESS " + acceptedValue;
             }
             
-            System.out.println("Proposer " + memberId + " did not get accept majority, trying again.");
+            System.out.println("M" + memberId + "'s proposal did not get accept majority, trying again.");
             return "FAILURE";
         }
         
-        System.out.println("Proposer " + memberId + " did not get prepare majority, trying again.");
+        System.out.println("M" + memberId + "'s proposal did not get accept majority, trying again.");
         return "FAILURE";
     }
     

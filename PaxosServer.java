@@ -26,7 +26,7 @@ public class PaxosServer {
     public static Map<Integer, Socket> proposerSockets = new HashMap<>();
     public static Map<Integer, Socket> acceptorSockets = new HashMap<>();
     
-    public static Map<Integer, Integer> proposerResponseCounts = new HashMap<>();
+    public static volatile Map<Integer, Integer> proposerResponseCounts = new HashMap<>();
     
     public static ExecutorService threadPool = Executors.newCachedThreadPool();
     
