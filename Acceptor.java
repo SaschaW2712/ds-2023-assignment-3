@@ -14,8 +14,7 @@ import dataclasses.Proposal;
 import enums.RequestPhase;
 
 public class Acceptor {
-
-    public static PrintStream outputStream = new PrintStream(System.out);
+    public PrintStream outputStream = new PrintStream(System.out);
 
     int memberId;
     MemberResponsiveness responsiveness;
@@ -33,21 +32,11 @@ public class Acceptor {
         this.responsiveness = responsiveness;
     }
     
-    public Acceptor(int memberId, MemberResponsiveness responsiveness, boolean immediateResponse, String outputFilePath) {
+    public Acceptor(int memberId, MemberResponsiveness responsiveness, boolean immediateResponse, PrintStream outputStream) {
         this.memberId = memberId;
         this.responsiveness = responsiveness;
         this.immediateResponse = immediateResponse;
-
-        try {
-            PrintWriter writer = new PrintWriter(outputFilePath);
-            writer.print("");
-            writer.close();
-            
-            outputStream = new PrintStream(new FileOutputStream(outputFilePath, true));
-        } catch(FileNotFoundException e) {
-            outputStream.println("Couldn't find output file");
-            return;
-        }
+        this.outputStream = outputStream;
     }
     
     public synchronized void listenToServer() {

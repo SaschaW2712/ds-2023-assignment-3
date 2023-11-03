@@ -17,8 +17,8 @@ import enums.Regularity;
 import enums.ResponseLikelihood;
 
 public class Member {
-    public static PrintStream outputStream = new PrintStream(System.out);
-    
+    public PrintStream outputStream = new PrintStream(System.out);
+
     int memberId;
     Proposer proposer;
     Acceptor acceptor;
@@ -42,29 +42,22 @@ public class Member {
         this.acceptor = new Acceptor(memberId, responsiveness);
     }
     
-    public Member(int memberId, boolean shouldPropose, boolean immediateResponse, String outputFilePath) {
+    public Member(int memberId, boolean shouldPropose, boolean immediateResponse, PrintStream outputStream) {
         this.memberId = memberId;
+
+        if (outputStream != null) {
+            this.outputStream = outputStream;
+        }
         
         if (shouldPropose) {
             //MAJORITY CONSTANT
-            this.proposer = new Proposer(memberId, 9, outputFilePath);
+            this.proposer = new Proposer(memberId, 9, outputStream);
         }
         
         this.immediateResponse = immediateResponse;
         
         initMemberResponsiveness(memberId);
-        this.acceptor = new Acceptor(memberId, responsiveness, immediateResponse, outputFilePath);
-        
-        try {
-            PrintWriter writer = new PrintWriter(outputFilePath);
-            writer.print("");
-            writer.close();
-            
-            outputStream = new PrintStream(new FileOutputStream(outputFilePath, true));
-        } catch(FileNotFoundException e) {
-            outputStream.println("Couldn't find output file");
-            return;
-        }
+        this.acceptor = new Acceptor(memberId, responsiveness, immediateResponse, outputStream);
     }
     
     public String elect() {

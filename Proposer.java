@@ -6,7 +6,7 @@ import dataclasses.ResponseWithOptionalProposal;
 
 
 public class Proposer {
-    public static PrintStream outputStream = new PrintStream(System.out);
+    public PrintStream outputStream = new PrintStream(System.out);
 
     int memberId;
     int proposalNumber;
@@ -23,7 +23,7 @@ public class Proposer {
         this.numAcceptors = numAcceptors;
     }
 
-    public Proposer(int memberId, int numAcceptors, String outputFilePath) {
+    public Proposer(int memberId, int numAcceptors, PrintStream outputStream) {
         this.memberId = memberId;
         
         //ensure uniqueness (proposal number is always incremented by the same amount, so they interleave between members)
@@ -31,16 +31,7 @@ public class Proposer {
         
         this.numAcceptors = numAcceptors;
 
-        try {
-            PrintWriter writer = new PrintWriter(outputFilePath);
-            writer.print("");
-            writer.close();
-            
-            outputStream = new PrintStream(new FileOutputStream(outputFilePath, true));
-        } catch(FileNotFoundException e) {
-            outputStream.println("Couldn't find output file");
-            return;
-        }
+        this.outputStream = outputStream;
     }
     
     public String propose(String value) {

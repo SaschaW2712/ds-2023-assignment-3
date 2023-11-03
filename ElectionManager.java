@@ -44,7 +44,7 @@ public class ElectionManager {
     //MAJORITY CONSTANTS (2)
     public static void initMembers() {
         for (int memberId = 1; memberId < 10; memberId++) {
-            members.add(new Member(memberId, memberId < 4));
+            members.add(new Member(memberId, memberId < 4, immediateResponse, outputStream));
         }
     }
     
