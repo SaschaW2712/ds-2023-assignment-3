@@ -13,6 +13,8 @@ public class Proposer {
     int numAcceptors;
     
     Socket socket;
+
+    int port = 4567;
     
     public Proposer(int memberId, int numAcceptors) {
         this.memberId = memberId;
@@ -23,7 +25,7 @@ public class Proposer {
         this.numAcceptors = numAcceptors;
     }
 
-    public Proposer(int memberId, int numAcceptors, PrintStream outputStream) {
+    public Proposer(int memberId, int numAcceptors, PrintStream outputStream, int port) {
         this.memberId = memberId;
         
         //ensure uniqueness (proposal number is always incremented by the same amount, so they interleave between members)
@@ -32,6 +34,8 @@ public class Proposer {
         this.numAcceptors = numAcceptors;
 
         this.outputStream = outputStream;
+
+        this.port = port;
     }
     
     public String propose(String value) {
@@ -45,7 +49,7 @@ public class Proposer {
         int neededMajority = (numAcceptors / 2) + 1;
         
         try {
-            socket = new Socket("localhost", 4567);
+            socket = new Socket("localhost", port);
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             
@@ -95,7 +99,7 @@ public class Proposer {
             int acceptCount = 0;
             
             try {
-                Socket socket = new Socket("localhost", 4567);
+                Socket socket = new Socket("localhost", port);
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 

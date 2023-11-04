@@ -34,6 +34,8 @@ public class PaxosServer {
     public static volatile Map<Integer, Integer> proposerResponseCounts = new HashMap<>();
     
     public static ExecutorService threadPool = Executors.newCachedThreadPool();
+
+    public static int port = 4567;
     
     public static void main(String[] args) { 
         if (args.length > 0) {
@@ -48,6 +50,10 @@ public class PaxosServer {
                 outputStream.println("Couldn't find output file");
                 return;
             }
+        }
+
+        if (args.length > 1) {
+            port = Integer.parseInt(args[1]);
         }
         
         for(int i = 1; i < 10; i++) {
@@ -64,8 +70,8 @@ public class PaxosServer {
     
     public static void runServer() {
         try {
-            serverSocket = new ServerSocket(4567);
-            outputStream.println("Paxos server started on port 4567");
+            serverSocket = new ServerSocket(port);
+            outputStream.println("Paxos server started on port " + port);
             
             while (!serverSocket.isClosed()) {
                 Socket socket = serverSocket.accept();
@@ -80,8 +86,8 @@ public class PaxosServer {
     }
     
     public static void resetConnections() {
-        System.out.println("Server has been informed that the current election is finished.");
-        System.out.println("Clearing connected sockets and response counts.");
+        outputStream.println("Server has been informed that the current election is finished.");
+        outputStream.println("Clearing connected sockets and response counts.");
         for (Socket socket : proposerSockets.values()) {
             if (socket != null && !socket.isClosed()) {
                 try {
@@ -103,7 +109,7 @@ public class PaxosServer {
         acceptorSockets.clear();
         proposerResponseCounts.clear();
 
-        System.out.println("Messages that appear below this line as threads resolve may be ignored.");
+        outputStream.println("Messages that appear below this line as threads resolve may be ignored.");
     }
     
     public static void parseConnection(

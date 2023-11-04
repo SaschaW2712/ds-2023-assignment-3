@@ -29,6 +29,8 @@ public class Member {
     
     Thread proposerThread;
     Thread acceptorThread;
+
+    int port = 4567;
     
     public Member(int memberId, boolean shouldPropose) {
         this.memberId = memberId;
@@ -42,22 +44,24 @@ public class Member {
         this.acceptor = new Acceptor(memberId, responsiveness);
     }
     
-    public Member(int memberId, boolean shouldPropose, boolean immediateResponse, PrintStream outputStream) {
+    public Member(int memberId, boolean shouldPropose, boolean immediateResponse, PrintStream outputStream, int port) {
         this.memberId = memberId;
 
         if (outputStream != null) {
             this.outputStream = outputStream;
         }
         
+        this.port = port;
+        
         if (shouldPropose) {
             //MAJORITY CONSTANT
-            this.proposer = new Proposer(memberId, 9, outputStream);
+            this.proposer = new Proposer(memberId, 9, outputStream, port);
         }
         
         this.immediateResponse = immediateResponse;
         
         initMemberResponsiveness(memberId);
-        this.acceptor = new Acceptor(memberId, responsiveness, immediateResponse, outputStream);
+        this.acceptor = new Acceptor(memberId, responsiveness, immediateResponse, outputStream, port);
     }
     
     public String elect() {

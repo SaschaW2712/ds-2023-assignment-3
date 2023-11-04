@@ -5,12 +5,10 @@ public class ElectionTests {
 
         System.out.println("Running automated tests.");
 
-        Thread serverThread = new Thread(() -> {
-            String[] serverArgs = { "testoutputs/server.txt" };
+        new Thread(() -> {
+            String[] serverArgs = { "testoutputs/server_1.txt" };
             PaxosServer.main(serverArgs);
-        });
-
-        serverThread.start();
+        }).start();
 
         testWithImmediateResponses();
 
@@ -20,6 +18,12 @@ public class ElectionTests {
             e.printStackTrace();
         }
 
+        
+        new Thread(() -> {
+            String[] serverArgs = { "testoutputs/server_2.txt", "4568" };
+            PaxosServer.main(serverArgs);
+        }).start();
+        
         testWithDelayedAndAbsentResponses();
     }
 

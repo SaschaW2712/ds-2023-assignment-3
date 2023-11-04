@@ -20,12 +20,13 @@ public class ElectionManager {
     
     public static boolean immediateResponse = false;
     
+    public static int port = 4567;
     
     public static void main(String[] args) {
         if (args.length > 0) {
             immediateResponse = Boolean.parseBoolean(args[0]);
         }
-        
+
         if (args.length > 1) {
             //Redirect system output if requested
             try {
@@ -38,7 +39,11 @@ public class ElectionManager {
                 outputStream.println("Couldn't find output file");
                 return;
             }
-        } 
+        }
+
+        if (args.length > 2) {
+            port = (Integer.parseInt(args[2]));
+        }
         
         initMembers();
         
@@ -48,7 +53,7 @@ public class ElectionManager {
     //MAJORITY CONSTANTS (2)
     public static void initMembers() {
         for (int memberId = 1; memberId < 10; memberId++) {
-            members.add(new Member(memberId, memberId < 4, immediateResponse, outputStream));
+            members.add(new Member(memberId, memberId < 4, immediateResponse, outputStream, port));
         }
     }
     
@@ -99,7 +104,7 @@ public class ElectionManager {
         }
 
         try {
-            Socket socket = new Socket("localhost", 4567);
+            Socket socket = new Socket("localhost", port);
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             
             out.println("DONE");

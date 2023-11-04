@@ -24,22 +24,25 @@ public class Acceptor {
     Socket socket;
     PrintWriter out;
     BufferedReader in;
+
+    int port = 4567;
     
     public Acceptor(int memberId, MemberResponsiveness responsiveness) {
         this.memberId = memberId;
         this.responsiveness = responsiveness;
     }
     
-    public Acceptor(int memberId, MemberResponsiveness responsiveness, boolean immediateResponse, PrintStream outputStream) {
+    public Acceptor(int memberId, MemberResponsiveness responsiveness, boolean immediateResponse, PrintStream outputStream, int port) {
         this.memberId = memberId;
         this.responsiveness = responsiveness;
         this.immediateResponse = immediateResponse;
         this.outputStream = outputStream;
+        this.port = port;
     }
     
     public synchronized void listenToServer() {
         try {
-            socket = new Socket("localhost", 4567);
+            socket = new Socket("localhost", port);
             out = new PrintWriter(socket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             outputStream.println("Acceptor M" + memberId + " connected to server");
