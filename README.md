@@ -62,7 +62,7 @@ KNOWN ISSUES
 There were some bugs I noticed but was unable to replicate after extensive further testing, due to parallel threads making ordering of operations volatile.
 If any of these appear, please exit the PaxosServer and ElectionManager processes (with CTRL-C) and retry them.
 
-These issues appear to be less common when running automated tests - running `make paxos` and `make election` independently almost never trigger the problem.
+These issues appear to be less common when running manual tests - running `make paxos` and `make election` independently almost never trigger the problem.
 
     - Sometimes threads refuse to be interrupted when an election finishes, causing remaining Proposers to continue to try to get proposals passed despite only a couple of Acceptors still being connected.
     - Sometimes when many Acceptors write to their Paxos Server socket's output streams concurrently, only a few of the outputs will be received by the server's input streams.
