@@ -1,38 +1,65 @@
 Paxos server started on port 4567
 
-PREPARE REQUEST: Member M2, proposal 2
-
-
 PREPARE REQUEST: Member M1, proposal 1
+
+
+PREPARE REQUEST: Member M2, proposal 2
 
 
 PREPARE REQUEST: Member M3, proposal 3
 
-Error in parseConnection: null
-Error in parseConnection: null
-Member M2 response count: 1
-Member M2 response count: 2
 Member M1 response count: 1
-Member M3 response count: 1
-Member M3 response count: 2
-Member M2 response count: 3
 Member M1 response count: 2
-Member M3 response count: 3
-Member M2 response count: 4
+Member M3 response count: 1
 Member M1 response count: 3
 Member M1 response count: 4
-Member 1 received responses from majority of acceptors
 Member M1 response count: 5
+Member M1 response count: 6
+Member M1 response count: 7
+Member M1 response count: 8
+Member M3 response count: 2
+Member M3 response count: 3
 Member M3 response count: 4
+Member 1 received responses from majority of acceptors
+Member M3 response count: 5
+Member M3 response count: 6
+Member M2 response count: 1
+Member M3 response count: 7
+Member M3 response count: 8
+Member M2 response count: 2
+Member 3 received responses from majority of acceptors
+Member M2 response count: 3
+
+PREPARE REQUEST: Member M1, proposal 1, value 1
+
+Member M2 response count: 4
+Member M2 response count: 5
+Member M2 response count: 6
+
+PREPARE REQUEST: Member M3, proposal 3, value 3
+
+Member 2 received responses from majority of acceptors
+Member M1 response count: 1
+Member M1 response count: 2
+
+PREPARE REQUEST: Member M2, proposal 5
+
+Member M3 response count: 1
+Member M1 response count: 3
+Member M1 response count: 4
+Member M1 response count: 5
+Member M1 response count: 6
+Member 1 received responses from majority of acceptors
+Member M3 response count: 2
+Member M3 response count: 3
 
 PREPARE REQUEST: Member M1, proposal 4
 
-Member M1 response count: 1
-Member M1 response count: 2
-Member M1 response count: 3
-Member M1 response count: 4
-Member 1 received responses from majority of acceptors
-Member M1 response count: 5
+Member M3 response count: 4
+Member M3 response count: 5
+Member M3 response count: 6
+Member M1's proposal timed out
+Member 3 received responses from majority of acceptors
 
 PREPARE REQUEST: Member M1, proposal 7
 
@@ -40,14 +67,9 @@ Member M1 response count: 1
 Member M1 response count: 2
 Member M1 response count: 3
 Member M1 response count: 4
-Member 1 received responses from majority of acceptors
 Member M1 response count: 5
-
-PREPARE REQUEST: Member M1, proposal 7, value 1
-
-Member M1 response count: 1
-Member M1 response count: 2
-Member M1 response count: 3
-Member M1 response count: 4
-Member M1 response count: 5
+Member M1 response count: 6
+Member M1 response count: 7
+Member M1 response count: 8
 Member 1 received responses from majority of acceptors
+Error in parseConnection: null

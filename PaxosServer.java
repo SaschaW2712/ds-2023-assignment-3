@@ -49,13 +49,13 @@ public class PaxosServer {
                 return;
             }
         }
-
+        
         for(int i = 1; i < 10; i++) {
             if (i < 4) {
                 proposerSockets.put(i, null);
                 proposerResponseCounts.put(i, -1);
             }
-
+            
             acceptorSockets.put(i, null);
         }
         runServer();
@@ -91,7 +91,7 @@ public class PaxosServer {
         }
         
         proposerSockets.clear();
-
+        
         for (Socket socket : acceptorSockets.values()) {
             if (!socket.isClosed()) {
                 try {
@@ -99,9 +99,11 @@ public class PaxosServer {
                 } catch (IOException e) {}
             }
         }
-
+        
         acceptorSockets.clear();
         proposerResponseCounts.clear();
+
+        System.out.println("Messages that appear below this line as threads resolve may be ignored.");
     }
     
     public static void parseConnection(
@@ -190,19 +192,22 @@ public class PaxosServer {
         ) {
             //wait
         }
+        
+        
+        synchronized (PaxosServer.class) {
+            if (acceptorSockets.size() == 0 || proposerResponseCounts.get(memberId) == null) {
+                out.println("ENDED");
+            }
+            
+            if (proposerResponseCounts.get(memberId) != null && proposerResponseCounts.get(memberId) < majority) {
+                outputStream.println("Member M" + memberId + "'s proposal timed out");
+                out.println("TIMEOUT");
+            } else {
+                outputStream.println("Member " + memberId + " received responses from majority of acceptors");
+                out.println("MAJORITY");
+            }
+        }
 
-        if (acceptorSockets.size() == 0 || proposerResponseCounts.get(memberId) == null) {
-            out.println("ENDED");
-        }
-        
-        if (proposerResponseCounts.get(memberId) < majority) {
-            outputStream.println("Member M" + memberId + "'s proposal timed out");
-            out.println("TIMEOUT");
-        } else {
-            outputStream.println("Member " + memberId + " received responses from majority of acceptors");
-            out.println("MAJORITY");
-        }
-        
         try {
             socket.close();
         } catch (IOException e) {
@@ -269,8 +274,10 @@ public class PaxosServer {
         try {
             synchronized (PaxosServer.class) {
                 for (Socket acceptorSocket : acceptorSockets.values()) {
-                    PrintWriter acceptorOut = new PrintWriter(acceptorSocket.getOutputStream(), true);
-                    acceptorOut.println("Proposer " + memberId + " Prepare " + proposalNumber);
+                    if (acceptorSocket != null) {
+                        PrintWriter acceptorOut = new PrintWriter(acceptorSocket.getOutputStream(), true);
+                        acceptorOut.println("Proposer " + memberId + " Prepare " + proposalNumber);
+                    }
                 }
             }
             
