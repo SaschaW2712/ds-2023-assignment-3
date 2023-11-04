@@ -1,0 +1,68 @@
+Paxos server started on port 4568
+
+PREPARE REQUEST: Member M2, proposal 2
+
+
+PREPARE REQUEST: Member M3, proposal 3
+
+
+PREPARE REQUEST: Member M1, proposal 1
+
+Member M1 response count: 1
+Member M2 response count: 1
+Member M2 response count: 2
+Member M2 response count: 3
+Member M2 response count: 4
+Member M2 response count: 5
+Member M2 response count: 6
+Member M2 response count: 7
+Member M1 response count: 2
+Member 2 received responses from majority of acceptors
+Member M3 response count: 1
+
+PREPARE REQUEST: Member M2, proposal 2, value 2
+
+Member M1 response count: 3
+Member M1 response count: 4
+Member M3 response count: 2
+Member M3 response count: 3
+Member M1 response count: 5
+Member M1 response count: 6
+Member 1 received responses from majority of acceptors
+Member M3 response count: 4
+Member M3 response count: 5
+Member M2 response count: 1
+Member 3 received responses from majority of acceptors
+
+PREPARE REQUEST: Member M3, proposal 3, value 3
+
+Member M2 response count: 2
+
+PREPARE REQUEST: Member M1, proposal 4
+
+Member M2 response count: 3
+Member M2 response count: 4
+Member M3 response count: 1
+Member M2 response count: 5
+Member M3 response count: 2
+Member M1 response count: 1
+Member M3 response count: 3
+Member M3 response count: 4
+Member M3 response count: 5
+Member 2 received responses from majority of acceptors
+Member 3 received responses from majority of acceptors
+
+PREPARE REQUEST: Member M2, proposal 5
+
+Member M2 response count: 1
+Member M1 response count: 2
+Member M1 response count: 3
+Member M2 response count: 2
+Member M2 response count: 3
+Member M2 response count: 4
+Member M2 response count: 5
+Member 2 received responses from majority of acceptors
+Server has been informed that the current election is finished.
+Clearing connected sockets and response counts.
+Messages that appear below this line as threads resolve may be ignored.
+Member 1 received responses from majority of acceptors

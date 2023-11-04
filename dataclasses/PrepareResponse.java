@@ -1,7 +1,8 @@
+package dataclasses;
 public class PrepareResponse {
-    int id;
-    boolean memberResponds = true;
-    Proposal acceptedProposal;
+    public int id;
+    public boolean memberResponds = true;
+    public Proposal acceptedProposal;
 
     public PrepareResponse(int id) {
         this.id = id;

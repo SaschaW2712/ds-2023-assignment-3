@@ -1,0 +1,93 @@
+Acceptor M2 connected to server
+Acceptor M8 connected to server
+Acceptor M4 connected to server
+Acceptor M1 connected to server
+Acceptor M6 connected to server
+Acceptor M5 connected to server
+Acceptor M9 connected to server
+Acceptor M3 connected to server
+Acceptor M7 connected to server
+PREPARE RESPONSE (M3, proposal 3): M1 responds OK
+PREPARE RESPONSE (M3, proposal 3): M8 responds OK
+PREPARE RESPONSE (M3, proposal 3): M7 responds OK
+PREPARE RESPONSE (M1, proposal 1): M1 responds REJECTED
+PREPARE RESPONSE (M3, proposal 3): M2 responds OK
+PREPARE RESPONSE (M1, proposal 1): M8 responds REJECTED
+PREPARE RESPONSE (M3, proposal 3): M6 responds OK
+PREPARE RESPONSE (M1, proposal 1): M7 responds REJECTED
+PREPARE RESPONSE (M2, proposal 2): M1 responds REJECTED
+PREPARE RESPONSE (M1, proposal 1): M2 responds REJECTED
+PREPARE RESPONSE (M2, proposal 2): M7 responds REJECTED
+PREPARE RESPONSE (M2, proposal 2): M8 responds REJECTED
+PREPARE RESPONSE (M2, proposal 2): M2 responds REJECTED
+PREPARE RESPONSE (M3, proposal 3): M9 responds OK
+PREPARE RESPONSE (M1, proposal 1): M6 responds REJECTED
+PREPARE RESPONSE (M1, proposal 1): M9 responds REJECTED
+PREPARE RESPONSE (M2, proposal 2): M6 responds REJECTED
+PREPARE RESPONSE (M2, proposal 2): M9 responds REJECTED
+M3's proposal got prepare majority for value 3
+ACCEPT RESPONSE (M3, proposal 3, value 3): M6 responds OK
+ACCEPT RESPONSE (M3, proposal 3, value 3): M3 responds OK
+ACCEPT RESPONSE (M3, proposal 3, value 3): M7 responds OK
+ACCEPT RESPONSE (M3, proposal 3, value 3): M4 responds OK
+ACCEPT RESPONSE (M3, proposal 3, value 3): M5 responds OK
+ACCEPT RESPONSE (M3, proposal 3, value 3): M2 responds OK
+ACCEPT RESPONSE (M3, proposal 3, value 3): M1 responds OK
+ACCEPT RESPONSE (M3, proposal 3, value 3): M8 responds OK
+ACCEPT RESPONSE (M3, proposal 3, value 3): M9 responds OK
+M1's proposal did not get accept majority, trying again.
+PREPARE RESPONSE (M1, proposal 4): M1 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M1, proposal 4): M3 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M1, proposal 4): M4 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M1, proposal 4): M5 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M1, proposal 4): M6 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M1, proposal 4): M7 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M1, proposal 4): M8 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M1, proposal 4): M2 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M1, proposal 4): M9 responds OK, with previously accepted proposal 3, value 3
+M2's proposal did not get accept majority, trying again.
+PREPARE RESPONSE (M2, proposal 5): M1 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M2, proposal 5): M2 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M2, proposal 5): M3 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M2, proposal 5): M5 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M2, proposal 5): M6 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M2, proposal 5): M4 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M2, proposal 5): M8 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M2, proposal 5): M7 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M2, proposal 5): M9 responds OK, with previously accepted proposal 3, value 3
+M2's proposal did not get accept majority, trying again.
+M3's proposal got accept majority for value 3
+Member ID 3 succeeded on proposal with value 3
+
+Finishing election and cleaning up threads
+
+PREPARE RESPONSE (M2, proposal 8): M2 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M2, proposal 8): M5 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M2, proposal 8): M6 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M2, proposal 8): M7 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M2, proposal 8): M8 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M2, proposal 8): M9 responds OK, with previously accepted proposal 3, value 3
+Acceptor M1 closing socket
+PREPARE RESPONSE (M2, proposal 8): M4 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M2, proposal 8): M3 responds OK, with previously accepted proposal 3, value 3
+PREPARE RESPONSE (M2, proposal 8): M1 responds OK, with previously accepted proposal 3, value 3
+Acceptor M2 closing socket
+Acceptor M3 closing socket
+Acceptor M4 closing socket
+Acceptor M5 closing socket
+Acceptor M6 closing socket
+Acceptor M7 closing socket
+Acceptor M8 closing socket
+Acceptor M9 closing socket
+Thread member1 joined
+Thread member2 joined
+Thread member3 joined
+Thread member4 joined
+Thread member5 joined
+Thread member6 joined
+Thread member7 joined
+Thread member8 joined
+Thread member9 joined
+
+Member 3 won the election!
+You can now exit the Paxos server.

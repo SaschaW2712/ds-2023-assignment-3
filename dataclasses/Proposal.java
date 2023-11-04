@@ -1,6 +1,7 @@
+package dataclasses;
 public class Proposal {
-    int proposalNumber;
-    String value;
+    public int proposalNumber;
+    public String value;
     
     public Proposal(int number, String value) {
         this.proposalNumber = number;
