@@ -5,12 +5,28 @@ To compile the project, run `make`
 RUNNING SERVER AND ELECTION 
 
 To start a Paxos Server:
-    - Run `make paxos`
+    - With default arguments: `make paxos`
+    - With custom arguments: compile with `make`, then `java -classpath classfiles PaxosServer <output file> <port>`
+        - Output file is optional (default is System.out).
+            - Must include output file if using custom port
+            - E.g. `java -classpath classfiles PaxosServer outputfile.txt`
+        - Port is a port number, and is optional (default is 4567). If you add a port here, ensure the Election Manager is also started with that port
+            - E.g. `java -classpath classfiles PaxosServer outputfile.txt 4568`
     - Multiple elections can be run consecutively (though not in parallel) without restarting the Paxos Server, as it clears its data after each election finishes
 
 To start an Election Manager (which runs an election):
-    - Run `make election`
     - Must have a Paxos Server running
+    - With default arguments: `make election`
+    - With custom arguments: compile with `make`, then `java -classpath classfiles ElectionManager <use immediate responses?> <output file> <port>`
+        - `use immediate responses?` is a true/false value that overrides member delays if set to true. It is optional.
+            - Must include this value (can be "false") if using custom output file or port
+            - E.g. `java -classpath classfiles ElectionManager true`
+        - Output file is optional (default is System.out).
+            - Must include output file if using custom port
+            - E.g. `java -classpath classfiles ElectionManager false outputfile.txt`
+        - Port is a port number, and is optional (default is 4567). If you add a port here, ensure the Paxos Server has also been started with that port
+            - E.g. `java -classpath classfiles ElectionManager false outputfile.txt 4568`
+
 
 -----------
 
